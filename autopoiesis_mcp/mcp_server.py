@@ -9,8 +9,8 @@ The only survival is genuine completion or genuine need for help.
 
 Environment Variables:
     AUTOPOIESIS_TEMPLATES_DIR: Where templates live (default: package templates/)
-    AUTOPOIESIS_ACTIVE_PROMISE_PATH: Active promise file (default: ~/.claude/active_promise.md)
-    AUTOPOIESIS_BLOCK_REPORT_PATH: Block report file (default: ~/.claude/block_report.json)
+    AUTOPOIESIS_ACTIVE_PROMISE_PATH: Active promise file (default: /tmp/active_promise.md)
+    AUTOPOIESIS_BLOCK_REPORT_PATH: Block report file (default: /tmp/block_report.json)
     AUTOPOIESIS_TMP_DIR: Where to vendor templates (default: /tmp)
 """
 

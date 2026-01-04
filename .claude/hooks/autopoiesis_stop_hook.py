@@ -1,16 +1,19 @@
 #!/usr/bin/env python3
 """
-Super-Ralph Stop Hook - Mode-aware continuity enforcement for GNOSYS
+Autopoiesis Stop Hook - Mode-aware continuity enforcement
 
-Unlike original Ralph (same prompt forever), Super-Ralph reads system state
-and injects contextually appropriate prompts based on omnisanc mode.
+Unlike original Ralph (same prompt forever), this hook reads system state
+and injects contextually appropriate prompts based on course and waypoint state.
+
+Mode Detection:
+1. Read course state (last_oriented project path)
+2. Check waypoint state for that project
+3. Determine mode from waypoint status
 
 Modes:
 - HOME: No course plotted, suggest plotting one
-- STARPORT: Course plotted, no waypoint journey started
-- SESSION: Active waypoint journey, inject step context
-- LANDING: Session ended, needs review
-- MISSION: Multi-session mission active
+- SESSION: Active waypoint journey (IN_PROGRESS), inject step context and block exit
+- LANDING: Waypoint journey ended, suggest next steps
 """
 
 import json
