@@ -1,15 +1,16 @@
 #!/usr/bin/env python3
 """
-Autopoiesis Stop Hook - Self-maintaining work loop enforcement.
+Super-Ralph Stop Hook - Mode-aware continuity enforcement for GNOSYS
 
-This is autopoiesis PLACE. Disingenuousness is death.
+Unlike original Ralph (same prompt forever), Super-Ralph reads system state
+and injects contextually appropriate prompts based on omnisanc mode.
 
-Checks for:
-1. Block report → exit honestly (approve)
-2. Active promise → block with promise context
-3. GNOSYS mode (if available) → mode-appropriate blocking
-
-Works standalone or with GNOSYS integration.
+Modes:
+- HOME: No course plotted, suggest plotting one
+- STARPORT: Course plotted, no waypoint journey started
+- SESSION: Active waypoint journey, inject step context
+- LANDING: Session ended, needs review
+- MISSION: Multi-session mission active
 """
 
 import json
@@ -24,9 +25,9 @@ from datetime import datetime
 logging.basicConfig(
     level=logging.DEBUG,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    filename='/tmp/autopoiesis_hook.log'
+    filename='/tmp/super_ralph_hook.log'
 )
-logger = logging.getLogger('autopoiesis')
+logger = logging.getLogger('super_ralph')
 
 # State file locations
 COURSE_STATE_FILE = "/tmp/heaven_data/omnisanc_core/.course_state"
@@ -144,6 +145,49 @@ def check_block_report() -> tuple:
     except Exception as e:
         logger.error(f"Error reading block report: {e}\n{traceback.format_exc()}")
     return False, ""
+
+
+def check_done_in_transcript(transcript_path: str) -> bool:
+    """Check if last assistant message contains <promise>DONE</promise>."""
+    try:
+        if not transcript_path or not os.path.exists(transcript_path):
+            return False
+
+        with open(transcript_path, 'r') as f:
+            lines = f.readlines()
+
+        # Read last few lines looking for assistant message with DONE
+        for line in reversed(lines[-20:]):
+            try:
+                entry = json.loads(line.strip())
+                if entry.get("type") == "assistant":
+                    message = entry.get("message", {})
+                    content = message.get("content", [])
+                    for block in content:
+                        if isinstance(block, dict) and block.get("type") == "text":
+                            if "<promise>DONE</promise>" in block.get("text", ""):
+                                logger.debug("Found <promise>DONE</promise> in transcript")
+                                return True
+            except json.JSONDecodeError:
+                continue
+    except Exception as e:
+        logger.error(f"Error checking transcript for DONE: {e}\n{traceback.format_exc()}")
+    return False
+
+
+def clear_promise_file() -> None:
+    """Clear the active promise file after DONE detected."""
+    try:
+        if ACTIVE_PROMISE_PATH.exists():
+            # Archive it
+            archive_dir = Path.home() / ".claude" / "promise_history"
+            archive_dir.mkdir(parents=True, exist_ok=True)
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            archive_path = archive_dir / f"completed_{timestamp}.md"
+            ACTIVE_PROMISE_PATH.rename(archive_path)
+            logger.info(f"Promise archived to {archive_path}")
+    except Exception as e:
+        logger.error(f"Error clearing promise: {e}\n{traceback.format_exc()}")
 
 
 def determine_mode(course: dict, waypoint: dict) -> str:
@@ -307,7 +351,7 @@ def _output_block(prompt: str, mode: str):
     result = {
         "decision": "block",
         "reason": prompt,
-        "systemMessage": f"Autopoiesis: {mode} mode | Disingenuousness is death. <promise>DONE</promise> when genuinely complete."
+        "systemMessage": f"Super-Ralph: {mode} mode | To exit: <promise>DONE</promise> when genuinely complete"
     }
     print(json.dumps(result))
     sys.exit(0)
@@ -346,7 +390,7 @@ def _build_promise_prompt(promise_content: str, course: dict, waypoint: dict) ->
 
     lines.append("")
     lines.append("Is this genuinely complete? <promise>DONE</promise> to confirm.")
-    lines.append("Blocked? Use be_autopoietic('blocked') to exit honestly.")
+    lines.append("Blocked? Use vendor_template('blocked') to exit honestly.")
 
     return "\n".join(lines)
 
@@ -391,7 +435,15 @@ def main():
         hook_input = json.load(sys.stdin)
         logger.debug(f"Hook input received: {hook_input}")
 
-        # Check for block report first - if exists, allow exit
+        transcript_path = hook_input.get("transcript_path", "")
+
+        # Check for <promise>DONE</promise> in transcript - if found, clear promise and approve
+        if check_done_in_transcript(transcript_path):
+            logger.debug("DONE found in transcript, clearing promise and approving")
+            clear_promise_file()
+            _output_approve()
+
+        # Check for block report - if exists, allow exit
         blocked, _ = check_block_report()
         if blocked:
             logger.debug("Block report found, approving stop")
