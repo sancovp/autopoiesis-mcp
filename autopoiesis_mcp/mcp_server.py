@@ -38,11 +38,11 @@ TEMPLATES_DIR = Path(os.environ.get(
 ))
 ACTIVE_PROMISE_PATH = Path(os.environ.get(
     "AUTOPOIESIS_ACTIVE_PROMISE_PATH",
-    Path.home() / ".claude" / "active_promise.md"
+    "/tmp/active_promise.md"
 ))
 BLOCK_REPORT_PATH = Path(os.environ.get(
     "AUTOPOIESIS_BLOCK_REPORT_PATH",
-    Path.home() / ".claude" / "block_report.json"
+    "/tmp/block_report.json"
 ))
 TMP_DIR = Path(os.environ.get("AUTOPOIESIS_TMP_DIR", "/tmp"))
 
@@ -56,6 +56,9 @@ def _ensure_templates():
         promise_path.write_text("""---
 created: __TIMESTAMP__
 status: active
+iteration: 1
+max_iterations: 0
+completion_promise: "DONE"
 ---
 
 # My Promises
@@ -87,6 +90,16 @@ If blocked: be_autopoietic("blocked")
 
 def _vendor_promise() -> str:
     """Vendor promise template and return instructions."""
+    # Guard: don't allow new promise while one is active
+    if ACTIVE_PROMISE_PATH.exists():
+        content = ACTIVE_PROMISE_PATH.read_text()
+        return f"""ERROR: Active promise already exists at {ACTIVE_PROMISE_PATH}
+
+You must complete your current promise with <promise>DONE</promise> or exit via be_autopoietic("blocked") before starting a new one.
+
+Current promise:
+{content}"""
+
     timestamp = datetime.now().isoformat()
     src = TEMPLATES_DIR / "promise.md"
     tmp = TMP_DIR / "new_promise.md"
@@ -110,10 +123,23 @@ There is no other way out. Disingenuousness is death."""
 
 
 def _vendor_blocked() -> str:
-    """Vendor block report template and return instructions."""
-    src = TEMPLATES_DIR / "block_report.json"
-    tmp = TMP_DIR / "block_report.json"
-    shutil.copy(src, tmp)
+    """Vendor block report template with promise text included."""
+    tmp = TMP_DIR / "new_block_report.json"
+
+    # Start with template
+    report = {
+        "completed_tasks": [],
+        "current_task": "",
+        "explanation": "",
+        "blocked_reason": "",
+        "promise_text": ""
+    }
+
+    # Include active promise text for observability
+    if ACTIVE_PROMISE_PATH.exists():
+        report["promise_text"] = ACTIVE_PROMISE_PATH.read_text()
+
+    tmp.write_text(json.dumps(report, indent=2))
     logger.info(f"Vendored block report to {tmp}")
 
     return f"""Autopoiesis: BLOCKED mode
@@ -134,7 +160,7 @@ Only use this if you genuinely cannot proceed alone."""
 
 
 @mcp.tool()
-def be_autopoietic(mode: str) -> str:
+def be_autopoietic(mode: str, get_block_report_history: bool = False) -> str:
     """
     Self-maintain your work loop. This is autopoiesis PLACE.
 
@@ -145,11 +171,21 @@ def be_autopoietic(mode: str) -> str:
     Args:
         mode: "promise" - commit to self-continuation (I will complete this)
               "blocked" - signal need for external input (I need help to survive)
+        get_block_report_history: If True, returns the block report archive directory
 
     Returns:
         Path to edit and activation instructions
     """
-    logger.debug(f"be_autopoietic: {mode}")
+    logger.debug(f"be_autopoietic: {mode}, get_block_report_history={get_block_report_history}")
+
+    if get_block_report_history:
+        archive_dir = Path("/tmp/block_reports")
+        if not archive_dir.exists():
+            return "No block report history yet. Archive dir: /tmp/block_reports"
+        files = sorted(archive_dir.glob("*_block_report.json"), reverse=True)
+        if not files:
+            return "No block reports archived yet. Archive dir: /tmp/block_reports"
+        return f"Block report archive: /tmp/block_reports\n\nRecent reports:\n" + "\n".join(f"- {f.name}" for f in files[:10])
 
     if mode not in ("promise", "blocked"):
         return "ERROR: mode must be 'promise' or 'blocked'"

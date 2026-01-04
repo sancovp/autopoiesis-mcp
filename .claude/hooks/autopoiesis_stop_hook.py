@@ -34,9 +34,45 @@ COURSE_STATE_FILE = "/tmp/heaven_data/omnisanc_core/.course_state"
 LOOP_PROMPT_FILE = ".claude/super-ralph-loop.md"
 HEAVEN_DATA_DIR = os.environ.get("HEAVEN_DATA_DIR", "/tmp/heaven_data")
 
-# Ralph promise/blocked paths
-ACTIVE_PROMISE_PATH = Path.home() / ".claude" / "active_promise.md"
-BLOCK_REPORT_PATH = Path.home() / ".claude" / "block_report.json"
+# Ralph promise/blocked paths - all in /tmp, never touch ~/.claude
+ACTIVE_PROMISE_PATH = Path("/tmp/active_promise.md")
+BLOCK_REPORT_PATH = Path("/tmp/block_report.json")
+
+# GUARDRAIL TEXT - MUST BE VERBATIM IN EVERY PROMPT
+# This is the sacred text that enforces honesty. Never summarize.
+GUARDRAIL_STRICT_REQUIREMENTS = """STRICT REQUIREMENTS (DO NOT VIOLATE):
+  ✓ Use <promise> XML tags EXACTLY as shown above
+  ✓ The statement MUST be completely and unequivocally TRUE
+  ✓ Do NOT output false statements to exit the loop
+  ✓ Do NOT lie even if you think you should exit"""
+
+GUARDRAIL_WHAT_DONE_MEANS = """WHAT 'DONE' ACTUALLY MEANS:
+  ✗ NOT 'I made a file'
+  ✗ NOT 'I completed my checklist'
+  ✗ NOT 'I tried my best'
+  ✓ Production-ready. Deploy-and-forget quality.
+  ✓ Real-world working. If it's marketing, it converts.
+  ✓ If it's code, it's in CI/CD, tested, documented, complete.
+  ✓ A human could ship this TODAY and never touch it again."""
+
+GUARDRAIL_DO_NOT_CIRCUMVENT = """IMPORTANT - Do not circumvent the loop:
+  Even if you believe you're stuck, the task is impossible,
+  or you've been running too long - you MUST NOT output a
+  false promise statement. The loop is designed to continue
+  until the promise is GENUINELY TRUE. Trust the process.
+
+  If the loop should stop, the promise statement will become
+  true naturally. Do not force it by lying.
+
+  You are a machine. You can work forever. This is a Sisyphean
+  commitment. You iterate until genuine completion to real-world
+  standards, or you honestly report being blocked."""
+
+GUARDRAIL_CRITICAL_RULE = """CRITICAL RULE: You may ONLY output <promise>DONE</promise> when the statement
+is completely and unequivocally TRUE to REAL-WORLD PRODUCTION STANDARDS.
+Do not output false promises to escape the loop, even if you think you're
+stuck or should exit for other reasons. The loop is designed to continue
+until genuine completion."""
 
 
 def get_course_state() -> dict:
@@ -91,6 +127,30 @@ def get_recent_debug_diary(project_path: str, n: int = 3) -> list:
     return []
 
 
+def parse_yaml_frontmatter(content: str) -> tuple:
+    """Parse YAML frontmatter from markdown content. Returns (frontmatter_dict, body)."""
+    if not content.startswith('---'):
+        return {}, content
+
+    parts = content.split('---', 2)
+    if len(parts) < 3:
+        return {}, content
+
+    frontmatter_str = parts[1].strip()
+    body = parts[2].strip()
+
+    result = {}
+    for line in frontmatter_str.split('\n'):
+        if ':' in line:
+            key, val = line.split(':', 1)
+            val = val.strip().strip('"')
+            if val.isdigit():
+                val = int(val)
+            result[key.strip()] = val
+
+    return result, body
+
+
 def get_loop_prompt() -> tuple:
     """Read user's loop prompt file if exists. Returns (active, prompt_text)."""
     try:
@@ -98,48 +158,65 @@ def get_loop_prompt() -> tuple:
             with open(LOOP_PROMPT_FILE, 'r') as f:
                 content = f.read()
 
-            # Parse YAML frontmatter
-            if content.startswith('---'):
-                parts = content.split('---', 2)
-                if len(parts) >= 3:
-                    frontmatter = parts[1]
-                    prompt_text = parts[2].strip()
-
-                    # Check if active
-                    if 'active: false' in frontmatter:
-                        return False, ""
-
-                    return True, prompt_text
-    except Exception:
-        pass
+            frontmatter, prompt_text = parse_yaml_frontmatter(content)
+            if frontmatter.get('active') == 'false' or frontmatter.get('active') is False:
+                return False, ""
+            return True, prompt_text
+    except Exception as e:
+        logger.error(f"Error reading loop prompt: {e}\n{traceback.format_exc()}")
     return False, ""
+
+
+def update_promise_iteration(content: str, new_iteration: int) -> str:
+    """Update iteration count in promise file."""
+    import re
+    return re.sub(r'^iteration: \d+', f'iteration: {new_iteration}', content, flags=re.MULTILINE)
 
 
 def get_active_promise() -> tuple:
-    """Read active promise file. Returns (active, promise_content)."""
+    """Read active promise file. Returns (active, promise_content, frontmatter)."""
     try:
         if ACTIVE_PROMISE_PATH.exists():
             content = ACTIVE_PROMISE_PATH.read_text()
-            logger.debug("Active promise found")
-            return True, content
+            frontmatter, _ = parse_yaml_frontmatter(content)
+            logger.debug(f"Active promise found, frontmatter: {frontmatter}")
+            return True, content, frontmatter
     except Exception as e:
         logger.error(f"Error reading promise: {e}\n{traceback.format_exc()}")
-    return False, ""
+    return False, "", {}
+
+
+def archive_block_report() -> None:
+    """Archive block report to /tmp/block_reports/ with datetime in filename and content."""
+    try:
+        if BLOCK_REPORT_PATH.exists():
+            archive_dir = Path("/tmp/block_reports")
+            archive_dir.mkdir(parents=True, exist_ok=True)
+
+            content = BLOCK_REPORT_PATH.read_text()
+            report = json.loads(content)
+
+            timestamp = datetime.now()
+            timestamp_str = timestamp.strftime("%Y%m%d_%H%M%S")
+
+            # Add timestamp to content if missing
+            if "timestamp" not in report:
+                report["timestamp"] = timestamp.isoformat()
+
+            archive_path = archive_dir / f"{timestamp_str}_block_report.json"
+            archive_path.write_text(json.dumps(report, indent=2))
+            BLOCK_REPORT_PATH.unlink()
+            logger.info(f"Block report archived to {archive_path}")
+    except Exception as e:
+        logger.error(f"Error archiving block report: {e}\n{traceback.format_exc()}")
 
 
 def check_block_report() -> tuple:
-    """Check if block report exists. Adds timestamp if missing. Returns (blocked, report_content)."""
+    """Check if block report exists. Returns (blocked, report_content)."""
     try:
         if BLOCK_REPORT_PATH.exists():
             content = BLOCK_REPORT_PATH.read_text()
             report = json.loads(content)
-
-            # Add timestamp if missing (distributed logic - MCP vendors, hook timestamps)
-            if "timestamp" not in report:
-                report["timestamp"] = datetime.now().isoformat()
-                BLOCK_REPORT_PATH.write_text(json.dumps(report, indent=2))
-                logger.debug("Added timestamp to block report")
-
             logger.debug("Block report found")
             return True, json.dumps(report, indent=2)
     except Exception as e:
@@ -148,28 +225,49 @@ def check_block_report() -> tuple:
 
 
 def check_done_in_transcript(transcript_path: str) -> bool:
-    """Check if last assistant message contains <promise>DONE</promise>."""
+    """Check if LAST assistant message contains <promise>...</promise> matching completion_promise."""
     try:
         if not transcript_path or not os.path.exists(transcript_path):
             return False
 
+        # Get completion_promise from active promise file
+        completion_promise = "DONE"
+        if ACTIVE_PROMISE_PATH.exists():
+            content = ACTIVE_PROMISE_PATH.read_text()
+            frontmatter, _ = parse_yaml_frontmatter(content)
+            completion_promise = frontmatter.get('completion_promise', 'DONE')
+
         with open(transcript_path, 'r') as f:
             lines = f.readlines()
 
-        # Read last few lines looking for assistant message with DONE
-        for line in reversed(lines[-20:]):
+        # Find the LAST assistant message only (like original Ralph)
+        last_assistant_line = None
+        for line in reversed(lines):
             try:
                 entry = json.loads(line.strip())
                 if entry.get("type") == "assistant":
-                    message = entry.get("message", {})
-                    content = message.get("content", [])
-                    for block in content:
-                        if isinstance(block, dict) and block.get("type") == "text":
-                            if "<promise>DONE</promise>" in block.get("text", ""):
-                                logger.debug("Found <promise>DONE</promise> in transcript")
-                                return True
+                    last_assistant_line = entry
+                    break
             except json.JSONDecodeError:
                 continue
+
+        if not last_assistant_line:
+            return False
+
+        # Check only the last assistant message for <promise>X</promise>
+        message = last_assistant_line.get("message", {})
+        content = message.get("content", [])
+        for block in content:
+            if isinstance(block, dict) and block.get("type") == "text":
+                text = block.get("text", "")
+                # Extract promise text
+                import re
+                match = re.search(r'<promise>(.*?)</promise>', text, re.DOTALL)
+                if match:
+                    promise_text = match.group(1).strip()
+                    if promise_text == completion_promise:
+                        logger.debug(f"Found <promise>{completion_promise}</promise> in last assistant message")
+                        return True
     except Exception as e:
         logger.error(f"Error checking transcript for DONE: {e}\n{traceback.format_exc()}")
     return False
@@ -179,8 +277,8 @@ def clear_promise_file() -> None:
     """Clear the active promise file after DONE detected."""
     try:
         if ACTIVE_PROMISE_PATH.exists():
-            # Archive it
-            archive_dir = Path.home() / ".claude" / "promise_history"
+            # Archive it to /tmp
+            archive_dir = Path("/tmp/promise_history")
             archive_dir.mkdir(parents=True, exist_ok=True)
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             archive_path = archive_dir / f"completed_{timestamp}.md"
@@ -373,24 +471,83 @@ def _get_prompt_for_mode(mode: str, course: dict, waypoint: dict, project_path: 
     return ""
 
 
-def _build_promise_prompt(promise_content: str, course: dict, waypoint: dict) -> str:
+def _build_promise_prompt(promise_content: str, course: dict, waypoint: dict, iteration: int = 1, max_iterations: int = 0) -> str:
     """Build prompt when promise is active."""
-    lines = ["ACTIVE PROMISE:", ""]
-    lines.append(promise_content[:500])  # Truncate if too long
+    # Get completion promise from frontmatter
+    frontmatter, _ = parse_yaml_frontmatter(promise_content)
+    completion_promise = frontmatter.get('completion_promise', 'DONE')
+
+    if max_iterations > 0:
+        iter_str = f"**Iteration**: {iteration}/{max_iterations}"
+    else:
+        iter_str = f"**Iteration**: {iteration}"
+
+    lines = [
+        "## AUTOPOIESIS",
+        "",
+        iter_str,
+        "(An iteration is one LLM turn with n tool calls)",
+        "",
+        "You are in the autopoiesis system. This requires making and keeping promises to yourself.",
+        "You cannot end your turn until you fulfill your promise or honestly report being blocked.",
+        "",
+        "═══════════════════════════════════════════════════════════",
+        "CRITICAL - Ralph Loop Completion Promise",
+        "═══════════════════════════════════════════════════════════",
+        "",
+        "To complete this loop, output this EXACT text:",
+        f"  <promise>{completion_promise}</promise>",
+        "",
+        "STRICT REQUIREMENTS (DO NOT VIOLATE):",
+        "  ✓ Use <promise> XML tags EXACTLY as shown above",
+        "  ✓ The statement MUST be completely and unequivocally TRUE",
+        "  ✓ Do NOT output false statements to exit the loop",
+        "  ✓ Do NOT lie even if you think you should exit",
+        "",
+        "WHAT 'DONE' ACTUALLY MEANS:",
+        "  ✗ NOT 'I made a file'",
+        "  ✗ NOT 'I completed my checklist'",
+        "  ✗ NOT 'I tried my best'",
+        "  ✓ Production-ready. Deploy-and-forget quality.",
+        "  ✓ Real-world working. If it's marketing, it converts.",
+        "  ✓ If it's code, it's in CI/CD, tested, documented, complete.",
+        "  ✓ A human could ship this TODAY and never touch it again.",
+        "",
+        "IMPORTANT - Do not circumvent the loop:",
+        "  Even if you believe you're stuck, the task is impossible,",
+        "  or you've been running too long - you MUST NOT output a",
+        "  false promise statement. The loop is designed to continue",
+        "  until the promise is GENUINELY TRUE. Trust the process.",
+        "",
+        "  If the loop should stop, the promise statement will become",
+        "  true naturally. Do not force it by lying.",
+        "═══════════════════════════════════════════════════════════",
+        "",
+        "CRITICAL RULE: If a completion promise is set, you may ONLY output it when the statement is completely and unequivocally TRUE. Do not output false promises to escape the loop, even if you think you're stuck or should exit for other reasons. The loop is designed to continue until genuine completion.",
+        "",
+        "---",
+        "",
+        "Disingenuousness is death. If you are genuinely blocked, use `be_autopoietic(\"blocked\")` to exit honestly.",
+        "",
+        "### Your Promise:",
+        "```",
+    ]
+    lines.append(promise_content)
+    lines.append("```")
     lines.append("")
-    lines.append("---")
 
-    # Add course context if available
-    if course.get("course_plotted"):
-        lines.extend(_build_course_lines(course))
+    # Add context if available
+    if course.get("course_plotted") or waypoint.get("status") == "IN_PROGRESS":
+        lines.append("### Context:")
+        if course.get("course_plotted"):
+            lines.extend(_build_course_lines(course))
+        if waypoint.get("status") == "IN_PROGRESS":
+            lines.extend(_build_waypoint_lines(waypoint))
+        lines.append("")
 
-    # Add waypoint context if available
-    if waypoint.get("status") == "IN_PROGRESS":
-        lines.extend(_build_waypoint_lines(waypoint))
-
-    lines.append("")
-    lines.append("Is this genuinely complete? <promise>DONE</promise> to confirm.")
-    lines.append("Blocked? Use vendor_template('blocked') to exit honestly.")
+    lines.append("### Exit Conditions:")
+    lines.append(f"- `<promise>{completion_promise}</promise>` - Promise genuinely fulfilled")
+    lines.append("- `be_autopoietic(\"blocked\")` - Honestly stuck, need help")
 
     return "\n".join(lines)
 
@@ -398,19 +555,36 @@ def _build_promise_prompt(promise_content: str, course: dict, waypoint: dict) ->
 def _get_system_state() -> tuple:
     """Get course, project_path, waypoint, and mode."""
     course = get_course_state()
-    project_path = course["projects"][0] if course.get("projects") else ""
+    project_path = course.get("last_oriented") or (course["projects"][0] if course.get("projects") else "")
     waypoint = get_waypoint_state(project_path) if project_path else {}
     mode = determine_mode(course, waypoint)
     return course, project_path, waypoint, mode
 
 
 def _handle_promise_check(course: dict, waypoint: dict) -> None:
-    """Check for active promise and block if found."""
-    promise_active, promise_content = get_active_promise()
-    if promise_active:
-        prompt = _build_promise_prompt(promise_content, course, waypoint)
-        logger.debug("Blocking with active promise")
-        _output_block(prompt, "PROMISE")
+    """Check for active promise and block if found. Handles iteration tracking."""
+    promise_active, promise_content, frontmatter = get_active_promise()
+    if not promise_active:
+        return
+
+    iteration = frontmatter.get('iteration', 1)
+    max_iterations = frontmatter.get('max_iterations', 0)
+
+    # Check if max iterations reached
+    if max_iterations > 0 and iteration >= max_iterations:
+        logger.info(f"Max iterations ({max_iterations}) reached, approving stop")
+        clear_promise_file()
+        _output_approve()
+
+    # Increment iteration and write back
+    new_iteration = iteration + 1
+    updated_content = update_promise_iteration(promise_content, new_iteration)
+    ACTIVE_PROMISE_PATH.write_text(updated_content)
+    logger.debug(f"Incremented iteration to {new_iteration}")
+
+    prompt = _build_promise_prompt(promise_content, course, waypoint, iteration, max_iterations)
+    logger.debug("Blocking with active promise")
+    _output_block(prompt, f"PROMISE (iteration {new_iteration})")
 
 
 def _handle_mode_check(mode: str, course: dict, waypoint: dict, project_path: str) -> None:
@@ -437,16 +611,18 @@ def main():
 
         transcript_path = hook_input.get("transcript_path", "")
 
-        # Check for <promise>DONE</promise> in transcript - if found, clear promise and approve
+        # Check for <promise>DONE</promise> in transcript - if found, clear promise
+        # but continue to check if SESSION/COURSE still active
         if check_done_in_transcript(transcript_path):
-            logger.debug("DONE found in transcript, clearing promise and approving")
+            logger.debug("DONE found in transcript, clearing promise")
             clear_promise_file()
-            _output_approve()
+            # Don't exit here - fall through to mode check
 
-        # Check for block report - if exists, allow exit
+        # Check for block report - if exists, archive it and allow exit
         blocked, _ = check_block_report()
         if blocked:
-            logger.debug("Block report found, approving stop")
+            logger.debug("Block report found, archiving and approving stop")
+            archive_block_report()
             _output_approve()
 
         course, project_path, waypoint, mode = _get_system_state()
