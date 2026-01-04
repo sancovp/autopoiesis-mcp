@@ -1,0 +1,21 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 .claude/hooks/autopoiesis_stop_hook.py"
+          }
+        ]
+      }
+    ]
+  },
+  "mcpServers": {
+    "autopoiesis": {
+      "command": "autopoiesis-mcp",
+      "args": []
+    }
+  }
+}
