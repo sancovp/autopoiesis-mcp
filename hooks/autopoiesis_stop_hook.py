@@ -626,6 +626,7 @@ def main():
         if blocked:
             logger.debug("Block report found, archiving and approving stop")
             archive_block_report()
+            clear_promise_file()  # Also clear the promise so loop doesn't restart
             _output_approve()
 
         course, project_path, waypoint, mode = _get_system_state()
