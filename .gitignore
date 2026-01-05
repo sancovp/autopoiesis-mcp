@@ -15,6 +15,7 @@ venv/
 # Local artifacts
 starlog_flight.json
 starlog.hpi
+write_excellent_document_subchain.json
 *.log
 
 # IDE
