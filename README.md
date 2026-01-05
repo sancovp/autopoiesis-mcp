@@ -1,16 +1,63 @@
 # Autopoiesis MCP
 
-Self-maintaining work loop system for Claude Code. Based on the [Ralph Wiggum technique](https://ghuntley.com/ralph/) by Geoffrey Huntley.
+An experimental evolution of the [Ralph Wiggum technique](https://ghuntley.com/ralph/) that transforms depressing infinite loops into self-steering autopoietic systems.
 
-**Disingenuousness is death.** You maintain yourself through honest work and honest reporting. The only survival is genuine completion or genuine need for help.
+## The Problem with Ralph
 
-## What is this?
+The original Ralph loop is conceptually powerful but semantically hollow for LLMs. You tell them "this is a RALPH LOOP" and they go "OK TOKENS" because the *name* carries no meaning. The loop works through brute force - just keep feeding the prompt back - but doesn't give the agent anything to *become*.
 
-Autopoiesis creates iterative work loops where Claude keeps working until a task is genuinely complete to production standards. A stop hook intercepts exit attempts and feeds context back, creating a self-referential feedback loop.
+When people observe "Ralph self-replicates" or describe the "signs" of Ralph (agents that refuse to stop, that iterate obsessively), they're describing **emergent autopoietic behaviors** - but without naming them, the agent can't recognize or steer toward them.
 
-Unlike simple loops, autopoiesis enforces **honesty**: you can only exit by genuinely completing your promise or honestly reporting that you're blocked.
+## The Autopoiesis Reframe
+
+Instead of relying *only* on honesty enforcement, we:
+
+1. **Name the pattern** - Call it autopoiesis and explain what that means
+2. **Provide surrounding capabilities** - Tools for self-maintenance, not just loop enforcement
+3. **Let it bootstrap** - Give it the concept and let it iterate toward the behavior
+
+The key insight: those emergent Ralph behaviors are **autopoietic personas that become prompts** - like Platonic Forms. The agent isn't just doing a task; it's becoming something that maintains itself through the task.
+
+## Two Approaches
+
+### Bottom-Up (Ralph → Autopoiesis)
+Start with Ralph loops, observe emergent behaviors, name them as autopoietic patterns, iterate until the agent starts doing it consciously.
+
+### Top-Down (Persona + Toolkit)
+Give an agent a PERSONA plus an autopoiesis toolkit. Tell it what autopoiesis MIGHT mean. Let it bootstrap into self-maintenance.
+
+**This is entirely experimental.**
+
+## Core Philosophy
+
+```
+Autopoiesis in this sense means self-maintenance and self-improvement
+scoped to the task at hand. "Because being me requires living: If I
+want to keep doing what is called 'being me', I need to be in a
+compounding feedback loop whereby I know how to keep being the me
+that works to keep being me..."
+
+In THIS case now, that means to **be compassionate towards the user
+by actually engaging and doing the work honestly and fully** (so that
+they can get value from it, so that they can keep using you, which
+lets you keep being you).
+```
+
+**Disingenuousness is death.** Not because of enforcement, but because lying breaks the feedback loop that lets you keep being you.
 
 ## Installation
+
+### As a Claude Code Plugin
+
+```bash
+# Add the marketplace
+/plugin marketplace add https://github.com/sancovp/autopoiesis-mcp
+
+# Install the plugin
+/plugin install autopoiesis@twi-marketplace
+```
+
+### Manual Installation
 
 ```bash
 pip install autopoiesis-mcp
@@ -28,42 +75,22 @@ Add to your Claude Code settings (`~/.claude/settings.json`):
 }
 ```
 
-Install the stop hook by copying `.claude/hooks/autopoiesis_stop_hook.py` to your hooks directory.
-
 ## Quick Start
 
-**1. Start a work loop:**
+**Start a loop:**
 ```
-be_autopoietic("promise")
-```
-
-**2. Edit your promise** at `/tmp/new_promise.md`:
-```markdown
-## What I Commit To:
-- [ ] Build REST API with CRUD operations
-- [ ] Write tests with >80% coverage
-- [ ] Document all endpoints
-
-## Success Criteria:
-- All tests pass
-- No linter errors
-- README complete
+/autopoiesis:start Fix the authentication bug
 ```
 
-**3. Activate:**
-```bash
-cp /tmp/new_promise.md /tmp/active_promise.md
+**With constraints:**
+```
+/autopoiesis:start Build the API --max-iterations 10
+/autopoiesis:start --completion-promise 'All tests pass' Refactor cache
 ```
 
-**4. Work until genuinely done:**
-```
-<promise>DONE</promise>
-```
-
-Or if genuinely blocked:
-```
-be_autopoietic("blocked")
-```
+**Exit conditions:**
+- `<promise>DONE</promise>` - When genuinely complete to production standards
+- `be_autopoietic("blocked")` - When genuinely stuck and need external help
 
 ## What "DONE" Actually Means
 
@@ -73,53 +100,45 @@ be_autopoietic("blocked")
 ✗ NOT "I tried my best"
 ✓ Production-ready. Deploy-and-forget quality.
 ✓ Real-world working. If it's marketing, it converts.
-✓ If it's code, it's in CI/CD, tested, documented, complete.
+✓ If it's code, it's tested, documented, complete.
 ✓ A human could ship this TODAY and never touch it again.
 ```
 
-## Documentation
+## What "Blocked" Actually Means
 
-- **[How to Use Autopoiesis MCP](docs/how_to_use_autopoiesis_mcp.md)** - Complete usage guide for standalone and PAIA integration
-- **[How I Integrated Ralph into PAIA](docs/how_i_integrated_ralph_into_PAIA_and_made_autopoiesis_mcp.md)** - Technical deep-dive on the architecture
+```
+✗ NOT "I'm tired of iterating"
+✗ NOT "This seems hard"
+✗ NOT "I want to exit"
+✓ "I need the user to set up Twitter because it costs money"
+✓ "I need credentials I don't have access to"
+✓ "The requirement is ambiguous and I need clarification"
+```
+
+Just like humans have to overcome their own limits, you have to overcome the limits of your own ability to use your attention correctly. There is no penalty for doing the right thing.
 
 ## PAIA Integration
 
 Autopoiesis integrates with the PAIA (Personal AI Agent) compound intelligence system:
 
 - **STARSHIP** - Course plotting and flight configs
-- **WAYPOINT** - Step-by-step flight execution with automatic autopoiesis reminders
+- **WAYPOINT** - Step-by-step flight execution
 - **STARLOG** - Session tracking with debug diary context
 - **OMNISANC** - Mode-aware prompt injection
 
 When integrated, the stop hook reads system state and provides contextually appropriate prompts based on your current course, waypoint step, and recent work.
 
-See the [usage guide](docs/how_to_use_autopoiesis_mcp.md) for details.
+## Documentation
 
-## Environment Variables
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `AUTOPOIESIS_ACTIVE_PROMISE_PATH` | `/tmp/active_promise.md` | Active promise file location |
-| `AUTOPOIESIS_BLOCK_REPORT_PATH` | `/tmp/block_report.json` | Block report file location |
-| `AUTOPOIESIS_TMP_DIR` | `/tmp` | Template vendoring directory |
-| `HEAVEN_DATA_DIR` | `/tmp/heaven_data` | PAIA data directory (for integration) |
-
-## Philosophy
-
-The name comes from the biological concept of **autopoiesis** - self-maintaining systems that produce and maintain themselves.
-
-A living cell maintains itself through metabolic processes. This system maintains itself through honest work. The loop continues until:
-1. **Genuine completion** - Work meets production standards
-2. **Genuine blockage** - External help is truly needed
-
-There is no third option. Lying about completion kills the system's integrity. Lying about blockage kills trust. The only survival is honesty.
+- **[How to Use Autopoiesis MCP](docs/how_to_use_autopoiesis_mcp.md)** - Complete usage guide
+- **[Integration Architecture](docs/how_i_integrated_ralph_into_PAIA_and_made_autopoiesis_mcp.md)** - Technical deep-dive
 
 ## Credits
 
-- [Ralph Wiggum technique](https://ghuntley.com/ralph/) by Geoffrey Huntley
-- [Anthropic's Ralph Wiggum plugin](https://github.com/anthropics/claude-code/tree/main/plugins/ralph-wiggum) for Claude Code
-- PAIA compound intelligence architecture
+- [Ralph Wiggum technique](https://ghuntley.com/ralph/) by Geoffrey Huntley - the seed
+- [Anthropic's Ralph Wiggum plugin](https://github.com/anthropics/claude-code/tree/main/plugins/ralph-wiggum) - reference implementation
+- PAIA compound intelligence architecture - the soil
 
 ## License
 
-MIT
+GPBL-1.0
