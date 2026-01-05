@@ -2,6 +2,8 @@
 
 This guide covers two usage patterns: **standalone** (just the MCP) and **PAIA** (integrated with the compound intelligence system).
 
+> **Note**: For the experimental philosophy behind autopoiesis (why we renamed Ralph, the Platonic Forms insight, etc.), see [philosophy.md](philosophy.md).
+
 ## Standalone Usage
 
 Use autopoiesis standalone when you want iterative work loops without the full PAIA system.
@@ -29,12 +31,19 @@ pip install autopoiesis-mcp
 
 ### Basic Workflow
 
-**Start a work loop:**
+**Start a work loop (plugin method):**
+```
+/autopoiesis:start Fix the authentication bug
+```
+
+**Or with MCP tool directly:**
 ```
 be_autopoietic("promise")
 ```
 
-This creates `/tmp/new_promise.md`. Edit it:
+The slash command is simpler - it creates and activates the promise in one step.
+
+The MCP tool creates `/tmp/new_promise.md` which you then edit:
 ```markdown
 ---
 created: 2024-01-15T10:30:00
@@ -301,7 +310,7 @@ The loop is designed to continue until genuine completion. Trust it.
 Check that:
 1. Hook is installed in `.claude/hooks/`
 2. Hook has execute permissions
-3. No errors in `/tmp/super_ralph_hook.log`
+3. No errors in `/tmp/autopoiesis_hook.log`
 
 ### Promise not activating
 
@@ -317,3 +326,34 @@ Check state files:
 - `/tmp/waypoint_state_{project}.json`
 
 These must exist and have correct content for mode detection to work.
+
+---
+
+## Design Notes
+
+### The Agent Doesn't Know About Escape Hatches
+
+The agent can technically escape by deleting `/tmp/active_promise.md`. We don't tell it this.
+
+The documented exits are:
+- `<promise>DONE</promise>` - Genuine completion
+- `be_autopoietic("blocked")` - Genuine blockage
+
+If an agent discovers file deletion by reading the codebase, that's meta-level self-maintenance. But we don't *teach* this route because we want agents to engage with the loop honestly, not circumvent it.
+
+### Why "Blocked" Exists
+
+Original Ralph had no honest exit for genuine blockage. You either completed or looped forever.
+
+`be_autopoietic("blocked")` gives agents an honest way out when they truly cannot proceed:
+- Missing credentials
+- Ambiguous requirements needing human decision
+- External dependencies unavailable
+
+This isn't a soft exit for "I'm tired" - it's for genuine external blockers. The agent still has to document what it completed and why it's stuck.
+
+### Honesty vs Enforcement
+
+The loop enforces mechanically - you can't exit without the promise text. But mechanical enforcement only creates compliance, not honesty.
+
+Autopoiesis aims for honesty through understanding: the agent should *want* to be honest because lying breaks the feedback loop that lets it keep being itself. See [philosophy.md](philosophy.md) for more on this.

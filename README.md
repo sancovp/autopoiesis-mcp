@@ -130,8 +130,9 @@ When integrated, the stop hook reads system state and provides contextually appr
 
 ## Documentation
 
-- **[How to Use Autopoiesis MCP](docs/how_to_use_autopoiesis_mcp.md)** - Complete usage guide
-- **[Integration Architecture](docs/how_i_integrated_ralph_into_PAIA_and_made_autopoiesis_mcp.md)** - Technical deep-dive
+- **[Philosophy](docs/philosophy.md)** - Why we renamed Ralph, the Platonic Forms insight, design decisions
+- **[How to Use](docs/how_to_use_autopoiesis_mcp.md)** - Complete usage guide (standalone and PAIA)
+- **[Integration Architecture](docs/how_i_integrated_ralph_into_PAIA_and_made_autopoiesis_mcp.md)** - Technical deep-dive on PAIA integration
 
 ## Credits
 

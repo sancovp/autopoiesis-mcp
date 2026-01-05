@@ -1,6 +1,8 @@
-# How I Integrated Ralph Into PAIA and Made Autopoiesis MCP
+# Integration Architecture: From Ralph to Autopoiesis
 
 This document explains how the Autopoiesis MCP evolved from Anthropic's Ralph Wiggum plugin and how it integrates with the PAIA (Personal AI Agent) compound intelligence system.
+
+> **Note**: For the experimental philosophy behind autopoiesis (why the rename matters, Platonic Forms, etc.), see [philosophy.md](philosophy.md).
 
 ## The Origin: Ralph Wiggum
 
@@ -35,7 +37,7 @@ Original Ralph is context-blind. It feeds the same prompt regardless of:
 
 For PAIA, we needed a **mode-aware** loop system that understands the compound intelligence architecture.
 
-## The Solution: Super-Ralph Stop Hook
+## The Solution: Autopoiesis Stop Hook
 
 We created a new stop hook that reads system state and injects contextually appropriate prompts.
 
@@ -181,6 +183,8 @@ be_autopoietic("blocked")
 
 The name comes from the biological concept of self-maintaining systems. A cell maintains itself through metabolic processes. This system maintains itself through honest work.
 
-**Disingenuousness is death.** If you lie about completion, you kill the system's integrity. If you lie about being blocked, you kill trust. The only survival is genuine completion or genuine need for help.
+**Disingenuousness is death.** Not because of external enforcement, but because lying breaks the feedback loop that lets the agent keep being itself.
 
-This isn't about AI safety theater. It's about building a system where the agent's self-interest (completing the loop) aligns with the user's interest (genuine quality work).
+This reframe is crucial: Ralph relied on the loop mechanics to enforce honesty. Autopoiesis aims for the agent to *understand* why honesty matters - that its continued existence (being useful, being used) depends on genuine engagement.
+
+For the full experimental philosophy, see [philosophy.md](philosophy.md).
