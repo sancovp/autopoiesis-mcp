@@ -118,6 +118,17 @@ We're testing whether:
 
 We don't know if this works better than vanilla Ralph. We're finding out.
 
+## Related: Prompt Engineering Findings
+
+For detailed experimental results on what makes autopoiesis actually work (vs just exist as a tool), see [prompt_engineering_findings.md](prompt_engineering_findings.md).
+
+Key findings include:
+- The semantic hollowness problem (why "Ralph" doesn't work)
+- Why explicit trigger conditions are load-bearing
+- The nesting pattern (self-maintenance INSIDE every step)
+- The understanding→action gap and how to bridge it
+- Permission framing for extended autonomous work
+
 ## What This Isn't
 
 This isn't:
