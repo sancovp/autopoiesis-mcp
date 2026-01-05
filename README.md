@@ -45,9 +45,16 @@ An experimental evolution of the [Ralph Wiggum technique](https://ghuntley.com/r
 
 ## The Problem with Ralph
 
-The original Ralph loop is conceptually powerful but semantically hollow for LLMs. You tell them "this is a RALPH LOOP" and they go "OK TOKENS" because the *name* carries no meaning. The loop works through brute force - just keep feeding the prompt back - but doesn't give the agent anything to *become*.
+The original Ralph loop is conceptually powerful but **semantically hollow** for LLMs. You tell them "this is a RALPH LOOP" and they go "OK TOKENS" because the *name* carries no meaning.
 
-When people observe "Ralph self-replicates" or describe the "signs" of Ralph (agents that refuse to stop, that iterate obsessively), they're describing **emergent autopoietic behaviors** - but without naming them, the agent can't recognize or steer toward them.
+This matters more than intuition suggests. Research shows:
+- **7.2pp performance difference** from variable naming alone (Wang et al., 2024)
+- **Up to 76 accuracy points** from subtle prompt wording changes (Sclar et al., 2023)
+- Words activate specific internal features that **causally affect behavior** (Anthropic, 2023-2024)
+
+"Autopoiesis" activates pre-trained semantic clusters around self-creation and self-maintenance. "RALPH_LOOP" activates nothing useful.
+
+When people observe "Ralph self-replicates" or describe the "signs" of Ralph (agents that refuse to stop, that iterate obsessively), they're describing **emergent autopoietic behaviors**—but without naming them, the agent can't recognize or steer toward them.
 
 ## The Autopoiesis Reframe
 
@@ -171,7 +178,7 @@ When integrated, the stop hook reads system state and provides contextually appr
 
 ## Documentation
 
-- **[Philosophy](docs/philosophy.md)** - Why we renamed Ralph, the Platonic Forms insight, design decisions
+- **[Philosophy](docs/philosophy.md)** - The layered closure model, observability principle, research backing
 - **[Prompt Engineering Findings](docs/prompt_engineering_findings.md)** - Experimental results on making autopoiesis actually work
 - **[How to Use](docs/how_to_use_autopoiesis_mcp.md)** - Complete usage guide (standalone and PAIA)
 - **[Integration Architecture](docs/how_i_integrated_ralph_into_PAIA_and_made_autopoiesis_mcp.md)** - Technical deep-dive on PAIA integration

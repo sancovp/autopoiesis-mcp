@@ -1,8 +1,26 @@
 # Prompt Engineering Findings for Autopoiesis
 
-This document captures experimental findings about how to make autopoiesis WORK - not just exist as a tool, but become behavioral integration.
+This document captures experimental findings about how to make autopoiesis WORK—not just exist as a tool, but become behavioral integration.
 
 These findings come from iterative testing with subagents to discover what triggers genuine autopoietic behavior vs mere tool availability.
+
+---
+
+## Research Validation
+
+Our experimental observations align with published research:
+
+| Our Finding | Research Support |
+|-------------|-----------------|
+| Semantic naming matters (H1) | 7.2pp difference from naming alone; up to 76pp from wording (Wang 2024, Sclar 2023) |
+| Words activate knowledge paths (H2) | 4,000+ interpretable features extracted; causal activation demonstrated (Anthropic 2023-2024) |
+| Tool availability ≠ integration (H3) | ReAct outperforms Act-only by 34%; vanilla LLMs <50% on tool tasks (Yao 2022, Huang 2024) |
+| Nesting beats layering (H4) | 4%→74% on Game of 24 with Tree of Thoughts; conditional on complexity >5 steps (Yao 2023) |
+| Description vs action gap (H5) | 13.2% reasoning-action mismatch in multi-agent systems (Cemri 2025) |
+
+The key unified insight: **LLMs are activation-driven systems where token choices determine computational pathways.**
+
+---
 
 ## The Semantic Hollowness Problem
 
@@ -272,3 +290,18 @@ BEHAVIORAL INTEGRATION
 ```
 
 This is the formula that made autopoiesis actually work in testing.
+
+---
+
+## References
+
+- Bricken et al. "Towards Monosemanticity" Anthropic (2023)
+- Templeton et al. "Scaling Monosemanticity" Anthropic (2024)
+- Wang et al. "How Does Naming Affect LLMs on Code Analysis Tasks?" (2024)
+- Sclar et al. "Quantifying Language Models' Sensitivity to Spurious Features" (2023)
+- Yao et al. "ReAct: Synergizing Reasoning and Acting" (2022)
+- Yao et al. "Tree of Thoughts" NeurIPS (2023)
+- Huang et al. "MetaTool Benchmark" ICLR (2024)
+- Cemri et al. "Why Do Multi-Agent LLM Systems Fail?" (2025)
+
+See also: [philosophy.md](philosophy.md) for the theoretical framework behind these findings.
