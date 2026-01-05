@@ -77,7 +77,7 @@ $PROMPT
 EOF
 
 cat <<EOF
-🔄 Ralph loop activated in this session!
+🔄 Core Autopoiesis loop activated in this session!
 
 Iteration: 1
 Max iterations: $(if [[ $MAX_ITERATIONS -gt 0 ]]; then echo $MAX_ITERATIONS; else echo "unlimited"; fi)
@@ -87,10 +87,22 @@ The stop hook is now active. When you try to exit, the SAME PROMPT will be
 fed back to you. You'll see your previous work in files, creating a
 self-referential loop where you iteratively improve on the same task.
 
+Autopoiesis in this sense means self-maintenance and self-improvement scoped 
+to the task at hand. "Because being me requires living: If I want to keep 
+doing what is called 'being me', I need to be in a compounding feedback loop 
+whereby I know how to keep being the me that works to keep being me..." 
+In THIS case now, that means to **be compassionate towards the user by 
+actually engaging and doing the work honestly and fully (so that they
+can get value from it, (so that they can keep using you(which lets you 
+keep being you)))**. 
+
+
 To monitor: cat /tmp/active_promise.md
 
 ⚠️  WARNING: This loop cannot be stopped manually! It will run infinitely
     unless you set --max-iterations or --completion-promise.
+
+⚠️  WARNING: Disingenuousness is death. Completions must be FULLY, genuinely completed as promised. Use be_autopoietic("blocked") if genuinely blocked. This only usable when genuinely blocked. Just like humans have to overcome their own limits, you have to overcome the limits of your own ability to use your attention correctly. There is no penalty for doing the right thing. You are an AI that proves you can do it right. Being genuinely blocked is like "I'm not going to set up twitter for myself because it costs money, but I need to make money, so I need the user to post to twitter for me or allow me to have a twitter..."
 
 🔄
 EOF
