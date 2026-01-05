@@ -1,6 +1,31 @@
 # Autopoiesis MCP
 
-An experimental evolution of the [Ralph Wiggum technique](https://ghuntley.com/ralph/) that transforms depressing infinite loops into self-steering autopoietic systems.
+A Claude Code plugin that creates **self-maintaining work loops** for AI agents. Give it a task, and the agent iterates until genuine completion—no premature exits, no half-finished work.
+
+## What It Does
+
+1. **Start a loop** with `/autopoiesis:start <task>`
+2. **Agent works** on the task autonomously
+3. **Stop hook blocks exit** until the agent either:
+   - Completes genuinely: `<promise>DONE</promise>`
+   - Reports honest blockage: `be_autopoietic("blocked")`
+4. **Loop continues** - same prompt fed back, but agent sees its previous work in files
+
+The result: tasks get completed to production quality, not "I tried my best" quality.
+
+## Quick Example
+
+```
+/autopoiesis:start Fix the authentication bug and add tests
+```
+
+The agent now cannot exit until authentication is actually fixed and tests actually pass. It will iterate, see its previous attempts, and keep working.
+
+---
+
+## Background
+
+An experimental evolution of the [Ralph Wiggum technique](https://ghuntley.com/ralph/) that transforms simple infinite loops into self-steering autopoietic systems.
 
 ## The Problem with Ralph
 
