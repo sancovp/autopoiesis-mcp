@@ -2,7 +2,7 @@
 """
 Autopoiesis Stop Hook - Mode-aware continuity enforcement
 
-Unlike original Ralph (same prompt forever), this hook reads system state
+Unlike simple loops (same prompt forever), this hook reads system state
 and injects contextually appropriate prompts based on course and waypoint state.
 
 Mode Detection:
@@ -28,16 +28,16 @@ from datetime import datetime
 logging.basicConfig(
     level=logging.DEBUG,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    filename='/tmp/super_ralph_hook.log'
+    filename='/tmp/autopoiesis_hook.log'
 )
-logger = logging.getLogger('super_ralph')
+logger = logging.getLogger('autopoiesis')
 
 # State file locations
 COURSE_STATE_FILE = "/tmp/heaven_data/omnisanc_core/.course_state"
-LOOP_PROMPT_FILE = ".claude/super-ralph-loop.md"
+LOOP_PROMPT_FILE = ".claude/autopoiesis-loop.md"
 HEAVEN_DATA_DIR = os.environ.get("HEAVEN_DATA_DIR", "/tmp/heaven_data")
 
-# Ralph promise/blocked paths - all in /tmp, never touch ~/.claude
+# Autopoiesis promise/blocked paths - all in /tmp, never touch ~/.claude
 ACTIVE_PROMISE_PATH = Path("/tmp/active_promise.md")
 BLOCK_REPORT_PATH = Path("/tmp/block_report.json")
 
@@ -243,7 +243,7 @@ def check_done_in_transcript(transcript_path: str) -> bool:
         with open(transcript_path, 'r') as f:
             lines = f.readlines()
 
-        # Find the LAST assistant message only (like original Ralph)
+        # Find the LAST assistant message only
         last_assistant_line = None
         for line in reversed(lines):
             try:
@@ -452,7 +452,7 @@ def _output_block(prompt: str, mode: str):
     result = {
         "decision": "block",
         "reason": prompt,
-        "systemMessage": f"Super-Ralph: {mode} mode | To exit: <promise>DONE</promise> when genuinely complete"
+        "systemMessage": f"Autopoiesis: {mode} mode | To exit: <promise>DONE</promise> when genuinely complete"
     }
     print(json.dumps(result))
     sys.exit(0)
@@ -495,7 +495,7 @@ def _build_promise_prompt(promise_content: str, course: dict, waypoint: dict, it
         "You cannot end your turn until you fulfill your promise or honestly report being blocked.",
         "",
         "═══════════════════════════════════════════════════════════",
-        "CRITICAL - Ralph Loop Completion Promise",
+        "CRITICAL - Autopoiesis Completion Promise",
         "═══════════════════════════════════════════════════════════",
         "",
         "To complete this loop, output this EXACT text:",
@@ -635,7 +635,7 @@ def main():
         _handle_mode_check(mode, course, waypoint, project_path)
 
     except Exception as e:
-        logger.error(f"Super-Ralph hook error: {e}\n{traceback.format_exc()}")
+        logger.error(f"Autopoiesis hook error: {e}\n{traceback.format_exc()}")
         _output_approve()
 
 
