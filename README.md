@@ -177,12 +177,15 @@ Just like humans have to overcome their own limits, you have to overcome the lim
 
 ## PAIA Integration
 
-Autopoiesis integrates with the PAIA (Personal AI Agent) compound intelligence system:
+This plugin was built to integrate "Ralph loop"-ness into the PAIA (Personal AI Agent) compound intelligence architecture. It already works with STARSHIP and WAYPOINT.
 
-- **STARSHIP** - Course plotting and flight configs
-- **WAYPOINT** - Step-by-step flight execution
-- **STARLOG** - Session tracking with debug diary context
-- **OMNISANC** - Mode-aware prompt injection
+**What this means:** If you use STARSHIP flight configs, you can create workflows where every step automatically uses autopoiesis. The agent commits a promise at each waypoint step and can't proceed until that step is genuinely complete.
+
+Components it integrates with:
+- **STARSHIP** - Flight configs can specify autopoiesis per step
+- **WAYPOINT** - Step-by-step execution with autopoietic loops at each step
+- **STARLOG** - Session tracking provides context to the stop hook
+- **OMNISANC** - Mode-aware prompt injection based on current state
 
 When integrated, the stop hook reads system state and provides contextually appropriate prompts based on your current course, waypoint step, and recent work.
 
