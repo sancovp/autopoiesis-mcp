@@ -21,6 +21,22 @@ The result: tasks get completed to production quality, not "I tried my best" qua
 
 The agent now cannot exit until authentication is actually fixed and tests actually pass. It will iterate, see its previous attempts, and keep working.
 
+## Why an MCP?
+
+The original Ralph loop is just a stop hook—it blocks exit and feeds the prompt back. So why add an MCP?
+
+**The MCP gives control of the system to the agent.** The `be_autopoietic()` tool lets the agent:
+- Signal genuine blockage (when it truly cannot proceed)
+- Structure its commitments (promise templates)
+- Access block report history
+
+We could have done this via system prompt instructions or a skill, but we chose an MCP because:
+1. **Simple schema** - one tool, two modes (`"promise"` or `"blocked"`)
+2. **Reliable invocation** - tool calls are more consistent than hoping the agent follows prompt instructions
+3. **Extensible** - easy to add more modes/capabilities as we learn
+
+**This is still experimental.** We're learning what works.
+
 ---
 
 ## Background
