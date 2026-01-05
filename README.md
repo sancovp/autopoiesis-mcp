@@ -4,14 +4,24 @@ A Claude Code plugin that creates **self-maintaining work loops** for AI agents.
 
 ## What It Does
 
-1. **Start a loop** with `/autopoiesis:start <task>`
-2. **Agent works** on the task autonomously
-3. **Stop hook blocks exit** until the agent either:
-   - Completes genuinely: `<promise>DONE</promise>`
-   - Reports honest blockage: `be_autopoietic("blocked")`
-4. **Loop continues** - same prompt fed back, but agent sees its previous work in files
+**Original Ralph:** User starts loop. User stops loop. Agent is trapped until user lets it out.
 
-The result: tasks get completed to production quality, not "I tried my best" quality.
+**This:** Agent controls the loop. Agent commits a promise → loop starts. Agent writes a block report → loop stops. The agent decides when it enters and exits.
+
+### How It Works
+
+1. Agent calls `be_autopoietic("promise")` → writes a promise file → stop hook activates
+2. Agent works on the task
+3. Agent can't exit until it either:
+   - Outputs `<promise>DONE</promise>` (genuine completion)
+   - Calls `be_autopoietic("blocked")` → writes a block report → stop hook deactivates
+4. Loop continues until one of those conditions is met
+
+### The Components
+
+- **MCP tool (`be_autopoietic`)** - Lets the agent write promise files and block reports
+- **Stop hook** - Reads those files, blocks exit when promise is active, allows exit when block report exists
+- **Slash commands** - `/autopoiesis:start` and `/autopoiesis:stop` for manual control (optional)
 
 ## Quick Example
 
