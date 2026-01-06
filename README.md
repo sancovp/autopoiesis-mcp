@@ -150,6 +150,37 @@ Add to your Claude Code settings (`~/.claude/settings.json`):
 - `<promise>DONE</promise>` - When genuinely complete to production standards
 - `be_autopoietic("blocked")` - When genuinely stuck and need external help
 
+## BrainHook
+
+BrainHook is a companion stop hook that enforces "look again" behavior. Unlike the main autopoiesis loop (task-locked), BrainHook is task-agnostic—it just reminds the agent to check for missed aspects before stopping.
+
+**Toggle with slash command:**
+```
+/brainhook
+```
+
+**Toggle externally (from another terminal or !brainhook in Claude Code):**
+```bash
+# First, install the bash command:
+./scripts/setup-brainhook-bash.sh
+
+# Then toggle anytime:
+!brainhook  # in Claude Code
+brainhook   # in any terminal
+```
+
+**When ON:**
+- Every stop attempt triggers a "look again" prompt
+- Agent checks for missed aspects, decides if fixes needed, acts
+- Enforces the "LLMs lack global coherence" principle
+- Loop continues until user turns it off externally
+
+**When to use:**
+- **BrainHook + task** = thoroughness (agent keeps finding things to improve)
+- **BrainHook + no task** = emergent exploration (expensive but can discover latent work)
+
+**Prompt file:** Edit `hooks/brainhook_prompt.txt` to customize the reminder prompt live without restarting.
+
 ## What "DONE" Actually Means
 
 ```
