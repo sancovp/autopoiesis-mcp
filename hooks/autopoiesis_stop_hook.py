@@ -640,13 +640,16 @@ def _handle_promise_check(course: dict, waypoint: dict) -> None:
     _output_block(prompt, f"PROMISE (iteration {new_iteration})")
 
 
-def _handle_mode_check(mode: str, course: dict, waypoint: dict, project_path: str) -> None:
+def _handle_mode_check(mode: str, course: dict, waypoint: dict, project_path: str, promise_just_cleared: bool = False) -> None:
     """Handle mode-based blocking logic."""
     loop_active, loop_prompt = get_loop_prompt()
 
     if not loop_active and mode not in ["SESSION"]:
         logger.debug("No loop active and not SESSION, approving stop")
-        _output_approve()
+        if promise_just_cleared:
+            _output_approve(course=course, waypoint=waypoint, clearing_promise=True)
+        else:
+            _output_approve()
 
     prompt = _get_prompt_for_mode(mode, course, waypoint, project_path, loop_prompt)
     if not prompt:
@@ -667,12 +670,14 @@ def main():
         logger.debug(f"Determined mode: {mode}")
 
         transcript_path = hook_input.get("transcript_path", "")
+        promise_just_cleared = False
 
         # Check for <promise>DONE</promise> in transcript - if found, clear promise
         # but continue to check if SESSION/COURSE still active
         if check_done_in_transcript(transcript_path):
             logger.debug("DONE found in transcript, clearing promise")
             clear_promise_file()
+            promise_just_cleared = True
             # Don't exit here - fall through to mode check
 
         # Check for block report - if exists, archive it and allow exit
@@ -680,11 +685,11 @@ def main():
         if blocked:
             logger.debug("Block report found, archiving and approving stop")
             archive_block_report()
-            clear_promise_file()  # Also clear the promise so loop doesn't restart
+            clear_promise_file()
             _output_approve(course=course, waypoint=waypoint, clearing_promise=True)
 
         _handle_promise_check(course, waypoint)
-        _handle_mode_check(mode, course, waypoint, project_path)
+        _handle_mode_check(mode, course, waypoint, project_path, promise_just_cleared)
 
     except Exception as e:
         logger.error(f"Autopoiesis hook error: {e}\n{traceback.format_exc()}")
