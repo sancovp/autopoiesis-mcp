@@ -1,0 +1,19 @@
+{
+  "description": "Autopoiesis plugin hooks - promise loops and brainhook reflection",
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/hooks/autopoiesis_stop_hook.py"
+          },
+          {
+            "type": "command",
+            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/hooks/brainhook.py"
+          }
+        ]
+      }
+    ]
+  }
+}
