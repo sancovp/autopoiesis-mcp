@@ -40,6 +40,7 @@ HEAVEN_DATA_DIR = os.environ.get("HEAVEN_DATA_DIR", "/tmp/heaven_data")
 # Autopoiesis promise/blocked paths - all in /tmp, never touch ~/.claude
 ACTIVE_PROMISE_PATH = Path("/tmp/active_promise.md")
 BLOCK_REPORT_PATH = Path("/tmp/block_report.json")
+BRAINHOOK_STATE_FILE = Path("/tmp/brainhook_state.txt")
 
 # GUARDRAIL TEXT - MUST BE VERBATIM IN EVERY PROMPT
 # This is the sacred text that enforces honesty. Never summarize.
@@ -441,8 +442,22 @@ What would you like to do?
 Continue."""
 
 
+def _turn_off_brainhook():
+    """Turn off brainhook when autopoiesis loop ends.
+
+    Relationship: Autopoiesis is tasking, brainhook is reflection.
+    When tasking ends, reflection should also end.
+    """
+    try:
+        BRAINHOOK_STATE_FILE.write_text("off")
+        logger.debug("Brainhook turned off (autopoiesis loop ended)")
+    except Exception as e:
+        logger.warning(f"Could not turn off brainhook: {e}\n{traceback.format_exc()}")
+
+
 def _output_approve():
-    """Output approve decision and exit."""
+    """Output approve decision and exit. Also turns off brainhook."""
+    _turn_off_brainhook()
     print(json.dumps({"decision": "approve"}))
     sys.exit(0)
 
