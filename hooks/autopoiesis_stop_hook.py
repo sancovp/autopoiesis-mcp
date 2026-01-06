@@ -41,6 +41,7 @@ HEAVEN_DATA_DIR = os.environ.get("HEAVEN_DATA_DIR", "/tmp/heaven_data")
 ACTIVE_PROMISE_PATH = Path("/tmp/active_promise.md")
 BLOCK_REPORT_PATH = Path("/tmp/block_report.json")
 BRAINHOOK_STATE_FILE = Path("/tmp/brainhook_state.txt")
+OMNISANC_DISABLED_FILE = Path("/tmp/heaven_data/omnisanc_core/.omnisanc_disabled")
 
 # GUARDRAIL TEXT - MUST BE VERBATIM IN EVERY PROMPT
 # This is the sacred text that enforces honesty. Never summarize.
@@ -442,22 +443,56 @@ What would you like to do?
 Continue."""
 
 
-def _turn_off_brainhook():
-    """Turn off brainhook when autopoiesis loop ends.
+def _is_omnisanc_active() -> bool:
+    """Check if omnisanc is active (disabled file does NOT exist)."""
+    return not OMNISANC_DISABLED_FILE.exists()
 
-    Relationship: Autopoiesis is tasking, brainhook is reflection.
-    When tasking ends, reflection should also end.
+
+def _should_turn_off_brainhook(course: dict, waypoint: dict) -> bool:
+    """Determine if brainhook should be turned off.
+
+    Brainhook is Layer 0 (reflection). Higher layers are:
+    - Layer 1: Step promise (active_promise.md)
+    - Layer 2: Waypoint (flight in progress)
+    - Layer 3: Mission (course.mission_active)
+
+    Only turn off brainhook if omnisanc is inactive OR no higher layers active.
+    If omnisanc is active with mission/waypoint, those are real promises - keep brainhook on.
     """
+    if _is_omnisanc_active():
+        # Omnisanc is on - respect higher layer promises
+        if course.get("mission_active"):
+            logger.debug("Omnisanc active with mission - keeping brainhook on")
+            return False
+        if waypoint.get("status") == "IN_PROGRESS":
+            logger.debug("Omnisanc active with waypoint in progress - keeping brainhook on")
+            return False
+    # Omnisanc not active OR no higher layers = safe to turn off
+    logger.debug("Safe to turn off brainhook (no higher layers active)")
+    return True
+
+
+def _turn_off_brainhook():
+    """Turn off brainhook state file."""
     try:
         BRAINHOOK_STATE_FILE.write_text("off")
-        logger.debug("Brainhook turned off (autopoiesis loop ended)")
+        logger.debug("Brainhook turned off")
     except Exception as e:
         logger.warning(f"Could not turn off brainhook: {e}\n{traceback.format_exc()}")
 
 
-def _output_approve():
-    """Output approve decision and exit. Also turns off brainhook."""
-    _turn_off_brainhook()
+def _output_approve(course: dict = None, waypoint: dict = None, clearing_promise: bool = False):
+    """Output approve decision and exit.
+
+    Args:
+        course: Course state dict (needed to check higher layer promises)
+        waypoint: Waypoint state dict (needed to check higher layer promises)
+        clearing_promise: True when clearing an actual promise/block report.
+                         False for passive approvals (no loop active, etc.)
+    """
+    if clearing_promise and course is not None:
+        if _should_turn_off_brainhook(course, waypoint or {}):
+            _turn_off_brainhook()
     print(json.dumps({"decision": "approve"}))
     sys.exit(0)
 
@@ -592,7 +627,7 @@ def _handle_promise_check(course: dict, waypoint: dict) -> None:
     if max_iterations > 0 and iteration >= max_iterations:
         logger.info(f"Max iterations ({max_iterations}) reached, approving stop")
         clear_promise_file()
-        _output_approve()
+        _output_approve(course=course, waypoint=waypoint, clearing_promise=True)
 
     # Increment iteration and write back
     new_iteration = iteration + 1
@@ -627,6 +662,10 @@ def main():
         hook_input = json.load(sys.stdin)
         logger.debug(f"Hook input received: {hook_input}")
 
+        # Get system state early - needed for brainhook decisions
+        course, project_path, waypoint, mode = _get_system_state()
+        logger.debug(f"Determined mode: {mode}")
+
         transcript_path = hook_input.get("transcript_path", "")
 
         # Check for <promise>DONE</promise> in transcript - if found, clear promise
@@ -642,10 +681,7 @@ def main():
             logger.debug("Block report found, archiving and approving stop")
             archive_block_report()
             clear_promise_file()  # Also clear the promise so loop doesn't restart
-            _output_approve()
-
-        course, project_path, waypoint, mode = _get_system_state()
-        logger.debug(f"Determined mode: {mode}")
+            _output_approve(course=course, waypoint=waypoint, clearing_promise=True)
 
         _handle_promise_check(course, waypoint)
         _handle_mode_check(mode, course, waypoint, project_path)
