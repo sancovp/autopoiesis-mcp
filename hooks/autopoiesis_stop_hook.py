@@ -42,6 +42,10 @@ ACTIVE_PROMISE_PATH = Path("/tmp/active_promise.md")
 BLOCK_REPORT_PATH = Path("/tmp/block_report.json")
 BRAINHOOK_STATE_FILE = Path("/tmp/brainhook_state.txt")
 OMNISANC_DISABLED_FILE = Path("/tmp/heaven_data/omnisanc_core/.omnisanc_disabled")
+TURN_COUNTER_FILE = Path("/tmp/autopoiesis_turn_counter.json")
+
+# Diary staleness threshold
+DIARY_STALE_TURNS = 3
 
 # GUARDRAIL TEXT - MUST BE VERBATIM IN EVERY PROMPT
 # This is the sacred text that enforces honesty. Never summarize.
@@ -171,6 +175,58 @@ def check_journey_aborted(project_path: str) -> bool:
     except Exception as e:
         logger.error(f"Error checking for journey abort: {e}\n{traceback.format_exc()}")
     return False
+
+
+def get_turn_counter(project_path: str) -> dict:
+    """Get turn counter state for a project."""
+    try:
+        if TURN_COUNTER_FILE.exists():
+            data = json.loads(TURN_COUNTER_FILE.read_text())
+            return data.get(project_path, {"turn": 0, "last_diary_turn": 0})
+    except Exception:
+        pass
+    return {"turn": 0, "last_diary_turn": 0}
+
+
+def update_turn_counter(project_path: str, diary_updated: bool = False) -> dict:
+    """Increment turn counter, optionally marking diary as updated."""
+    try:
+        data = {}
+        if TURN_COUNTER_FILE.exists():
+            data = json.loads(TURN_COUNTER_FILE.read_text())
+
+        counter = data.get(project_path, {"turn": 0, "last_diary_turn": 0})
+        counter["turn"] += 1
+        if diary_updated:
+            counter["last_diary_turn"] = counter["turn"]
+
+        data[project_path] = counter
+        TURN_COUNTER_FILE.write_text(json.dumps(data))
+        return counter
+    except Exception as e:
+        logger.error(f"Error updating turn counter: {e}\n{traceback.format_exc()}")
+        return {"turn": 0, "last_diary_turn": 0}
+
+
+def check_diary_staleness(project_path: str) -> tuple:
+    """Check if diary needs update. Returns (is_stale, turns_since_update)."""
+    counter = get_turn_counter(project_path)
+    turns_since = counter["turn"] - counter["last_diary_turn"]
+    is_stale = turns_since >= DIARY_STALE_TURNS
+    return is_stale, turns_since
+
+
+def _build_diary_status_line(project_path: str) -> list:
+    """Build diary status indicator instead of full entries."""
+    is_stale, turns_since = check_diary_staleness(project_path)
+    if is_stale:
+        return [
+            "",
+            f"⚠️ DIARY STALE ({turns_since} turns since last update)",
+            "The Starfleet Admiral requires checkin. Use update_debug_diary() ASAP and give SitRep!"
+        ]
+    else:
+        return [f"Debug Diary: ✓ Current ({turns_since} turns since last update)"]
 
 
 def parse_yaml_frontmatter(content: str) -> tuple:
@@ -440,7 +496,7 @@ def _build_navigation_lines() -> list:
     ]
 
 
-def format_session_prompt(course: dict, waypoint: dict, diary_entries: list, loop_prompt: str) -> str:
+def format_session_prompt(course: dict, waypoint: dict, project_path: str, loop_prompt: str) -> str:
     """Format prompt for SESSION mode (active waypoint journey)."""
     lines = [
         "═══════════════════════════════════════════════════════════",
@@ -453,7 +509,7 @@ def format_session_prompt(course: dict, waypoint: dict, diary_entries: list, loo
     ]
     lines.extend(_build_course_lines(course))
     lines.extend(_build_waypoint_lines(waypoint))
-    lines.extend(_build_diary_lines(diary_entries))
+    lines.extend(_build_diary_status_line(project_path))
 
     # Add user's loop prompt
     lines.append("")
@@ -576,8 +632,7 @@ def _get_prompt_for_mode(mode: str, course: dict, waypoint: dict, project_path: 
     elif mode == "STARPORT":
         return format_starport_prompt(course)
     elif mode == "SESSION":
-        diary_entries = get_recent_debug_diary(project_path) if project_path else []
-        return format_session_prompt(course, waypoint, diary_entries, loop_prompt)
+        return format_session_prompt(course, waypoint, project_path, loop_prompt)
     elif mode == "LANDING":
         return format_landing_prompt(course)
     elif mode == "MISSION":
@@ -729,6 +784,10 @@ def main():
         # Get system state early - needed for brainhook decisions
         course, project_path, waypoint, mode = _get_system_state()
         logger.debug(f"Determined mode: {mode}")
+
+        # Increment turn counter for diary staleness tracking
+        if project_path:
+            update_turn_counter(project_path)
 
         transcript_path = hook_input.get("transcript_path", "")
         promise_just_cleared = False
