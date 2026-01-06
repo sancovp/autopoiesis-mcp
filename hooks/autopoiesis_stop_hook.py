@@ -42,7 +42,7 @@ ACTIVE_PROMISE_PATH = Path("/tmp/active_promise.md")
 BLOCK_REPORT_PATH = Path("/tmp/block_report.json")
 BRAINHOOK_STATE_FILE = Path("/tmp/brainhook_state.txt")
 OMNISANC_DISABLED_FILE = Path("/tmp/heaven_data/omnisanc_core/.omnisanc_disabled")
-TURN_COUNTER_FILE = Path("/tmp/autopoiesis_turn_counter.json")
+CAPTAINS_LOG_TRACKER_FILE = Path("/tmp/autopoiesis_captains_log_tracker.json")
 
 # Diary staleness threshold
 DIARY_STALE_TURNS = 3
@@ -177,56 +177,81 @@ def check_journey_aborted(project_path: str) -> bool:
     return False
 
 
-def get_turn_counter(project_path: str) -> dict:
-    """Get turn counter state for a project."""
+def get_last_captains_log_timestamp(project_path: str) -> str:
+    """Find the most recent Captain's Log entry timestamp."""
     try:
-        if TURN_COUNTER_FILE.exists():
-            data = json.loads(TURN_COUNTER_FILE.read_text())
-            return data.get(project_path, {"turn": 0, "last_diary_turn": 0})
-    except Exception:
-        pass
-    return {"turn": 0, "last_diary_turn": 0}
+        project_name = os.path.basename(project_path.rstrip('/'))
+        registry_path = f"{HEAVEN_DATA_DIR}/registry/{project_name}_debug_diary_registry.json"
 
+        if not os.path.exists(registry_path):
+            return ""
 
-def update_turn_counter(project_path: str, diary_updated: bool = False) -> dict:
-    """Increment turn counter, optionally marking diary as updated."""
-    try:
-        data = {}
-        if TURN_COUNTER_FILE.exists():
-            data = json.loads(TURN_COUNTER_FILE.read_text())
+        with open(registry_path, 'r') as f:
+            registry = json.load(f)
 
-        counter = data.get(project_path, {"turn": 0, "last_diary_turn": 0})
-        counter["turn"] += 1
-        if diary_updated:
-            counter["last_diary_turn"] = counter["turn"]
+        # Find all Captain's Log entries
+        captains_logs = []
+        for entry_id, entry in registry.items():
+            if isinstance(entry, dict) and 'content' in entry:
+                content = entry.get('content', '')
+                if content.startswith("Captain's Log"):
+                    captains_logs.append(entry)
 
-        data[project_path] = counter
-        TURN_COUNTER_FILE.write_text(json.dumps(data))
-        return counter
+        if not captains_logs:
+            return ""
+
+        # Sort by timestamp descending and return the most recent
+        captains_logs.sort(key=lambda x: x.get('timestamp', ''), reverse=True)
+        return captains_logs[0].get('timestamp', '')
+
     except Exception as e:
-        logger.error(f"Error updating turn counter: {e}\n{traceback.format_exc()}")
-        return {"turn": 0, "last_diary_turn": 0}
+        logger.error(f"Error getting last Captain's Log: {e}\n{traceback.format_exc()}")
+    return ""
 
 
 def check_diary_staleness(project_path: str) -> tuple:
-    """Check if diary needs update. Returns (is_stale, turns_since_update)."""
-    counter = get_turn_counter(project_path)
-    turns_since = counter["turn"] - counter["last_diary_turn"]
-    is_stale = turns_since >= DIARY_STALE_TURNS
-    return is_stale, turns_since
+    """Check if diary needs update. Returns (is_stale, turns_without_update)."""
+    try:
+        last_log_ts = get_last_captains_log_timestamp(project_path)
+
+        # Load tracker
+        tracker = {}
+        if CAPTAINS_LOG_TRACKER_FILE.exists():
+            tracker = json.loads(CAPTAINS_LOG_TRACKER_FILE.read_text())
+
+        project_tracker = tracker.get(project_path, {"last_ts": "", "turns_same": 0})
+
+        # Check if Captain's Log changed
+        if last_log_ts != project_tracker["last_ts"]:
+            # New log entry - reset counter
+            project_tracker = {"last_ts": last_log_ts, "turns_same": 0}
+        else:
+            # Same log - increment counter
+            project_tracker["turns_same"] += 1
+
+        # Save tracker
+        tracker[project_path] = project_tracker
+        CAPTAINS_LOG_TRACKER_FILE.write_text(json.dumps(tracker))
+
+        is_stale = project_tracker["turns_same"] >= DIARY_STALE_TURNS
+        return is_stale, project_tracker["turns_same"]
+
+    except Exception as e:
+        logger.error(f"Error checking diary staleness: {e}\n{traceback.format_exc()}")
+    return False, 0
 
 
 def _build_diary_status_line(project_path: str) -> list:
     """Build diary status indicator instead of full entries."""
-    is_stale, turns_since = check_diary_staleness(project_path)
+    is_stale, turns_same = check_diary_staleness(project_path)
     if is_stale:
         return [
             "",
-            f"⚠️ DIARY STALE ({turns_since} turns since last update)",
+            "⚠️ DIARY STALE",
             "The Starfleet Admiral requires checkin. Use update_debug_diary() ASAP and give SitRep!"
         ]
     else:
-        return [f"Debug Diary: ✓ Current ({turns_since} turns since last update)"]
+        return []
 
 
 def parse_yaml_frontmatter(content: str) -> tuple:
@@ -784,10 +809,6 @@ def main():
         # Get system state early - needed for brainhook decisions
         course, project_path, waypoint, mode = _get_system_state()
         logger.debug(f"Determined mode: {mode}")
-
-        # Increment turn counter for diary staleness tracking
-        if project_path:
-            update_turn_counter(project_path)
 
         transcript_path = hook_input.get("transcript_path", "")
         promise_just_cleared = False
