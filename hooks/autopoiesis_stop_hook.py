@@ -397,7 +397,16 @@ def _build_navigation_lines() -> list:
 
 def format_session_prompt(course: dict, waypoint: dict, diary_entries: list, loop_prompt: str) -> str:
     """Format prompt for SESSION mode (active waypoint journey)."""
-    lines = _build_course_lines(course)
+    lines = [
+        "═══════════════════════════════════════════════════════════",
+        "⚙️  FLIGHT STABILIZER",
+        "═══════════════════════════════════════════════════════════",
+        "",
+        "You are in an active flight. Focus on step-to-step progression.",
+        "Complete current step fully before advancing.",
+        "",
+    ]
+    lines.extend(_build_course_lines(course))
     lines.extend(_build_waypoint_lines(waypoint))
     lines.extend(_build_diary_lines(diary_entries))
 
@@ -432,9 +441,16 @@ def format_mission_prompt(course: dict) -> str:
     mission_id = course.get("mission_id", "unknown")
     mission_step = course.get("mission_step", 0)
 
-    return f"""Mission: {mission_id} (step {mission_step})
+    return f"""═══════════════════════════════════════════════════════════
+🌉  MISSION BRIDGE
+═══════════════════════════════════════════════════════════
 
-Multi-session mission active. Options:
+You are between flights. Focus on mission-level objectives.
+Select your next flight or complete the mission.
+
+Mission: {mission_id} (step {mission_step})
+
+Options:
 - Start next session with waypoint.start_waypoint_journey()
 - Complete mission with STARSYSTEM.complete_mission()
 
