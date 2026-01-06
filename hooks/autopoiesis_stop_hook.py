@@ -132,6 +132,47 @@ def get_recent_debug_diary(project_path: str, n: int = 3) -> list:
     return []
 
 
+def check_journey_aborted(project_path: str) -> bool:
+    """Check if the most recent waypoint diary entry is an ABORT.
+
+    This handles the case where abort_waypoint_journey was called but
+    the waypoint state file wasn't properly updated (bug workaround).
+    """
+    try:
+        project_name = os.path.basename(project_path.rstrip('/'))
+        registry_path = f"{HEAVEN_DATA_DIR}/registry/{project_name}_debug_diary_registry.json"
+
+        if not os.path.exists(registry_path):
+            return False
+
+        with open(registry_path, 'r') as f:
+            registry = json.load(f)
+
+        # Get entries sorted by timestamp (newest first)
+        entries = []
+        for entry_id, entry in registry.items():
+            if isinstance(entry, dict) and 'content' in entry:
+                # Only look at waypoint-related entries
+                content = entry.get('content', '')
+                if '@waypoint:' in content:
+                    entries.append(entry)
+
+        if not entries:
+            return False
+
+        entries.sort(key=lambda x: x.get('timestamp', ''), reverse=True)
+
+        # Check if the most recent waypoint entry is an ABORT
+        most_recent = entries[0].get('content', '')
+        if 'ABORT' in most_recent and 'Journey aborted' in most_recent:
+            logger.debug(f"Found ABORT in most recent waypoint diary entry: {most_recent[:100]}")
+            return True
+
+    except Exception as e:
+        logger.error(f"Error checking for journey abort: {e}\n{traceback.format_exc()}")
+    return False
+
+
 def parse_yaml_frontmatter(content: str) -> tuple:
     """Parse YAML frontmatter from markdown content. Returns (frontmatter_dict, body)."""
     if not content.startswith('---'):
@@ -293,7 +334,7 @@ def clear_promise_file() -> None:
         logger.error(f"Error clearing promise: {e}\n{traceback.format_exc()}")
 
 
-def determine_mode(course: dict, waypoint: dict) -> str:
+def determine_mode(course: dict, waypoint: dict, project_path: str = "") -> str:
     """Determine current mode from state."""
     if not course.get("course_plotted"):
         return "HOME"
@@ -304,6 +345,10 @@ def determine_mode(course: dict, waypoint: dict) -> str:
     # Check waypoint state FIRST - SESSION takes priority over MISSION
     # (mission is the container, session is active work within it)
     if waypoint.get("status") == "IN_PROGRESS":
+        # BUT check if journey was aborted - diary entry takes precedence over stale state file
+        if project_path and check_journey_aborted(project_path):
+            logger.info("Journey was aborted (found in diary), treating as LANDING not SESSION")
+            return "LANDING"
         return "SESSION"
 
     if waypoint.get("status") == "END":
@@ -626,7 +671,7 @@ def _get_system_state() -> tuple:
     course = get_course_state()
     project_path = course.get("last_oriented") or (course["projects"][0] if course.get("projects") else "")
     waypoint = get_waypoint_state(project_path) if project_path else {}
-    mode = determine_mode(course, waypoint)
+    mode = determine_mode(course, waypoint, project_path)
     return course, project_path, waypoint, mode
 
 
