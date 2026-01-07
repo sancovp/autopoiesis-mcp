@@ -116,7 +116,30 @@ EDIT your commitments - what you will complete to survive.
 Then activate:
   cp {tmp} {ACTIVE_PROMISE_PATH}
 
-You are now in the loop. Genuine completion: <promise>DONE</promise>
+═══════════════════════════════════════════════════════════
+PROMISE QUALITY GRADIENT
+═══════════════════════════════════════════════════════════
+
+BAD PROMISE (vague, no mechanism):
+  "I promise to do a good job and be thorough"
+
+GOOD PROMISE (concrete, verifiable, no cop-outs):
+  "I promise to find the bug, fix it, and test it so my test
+   ACTUALLY VERIFIES it works AS EXPECTED - not just that the
+   code runs or prints 'success'. I have to actually know it works."
+
+SMART PROMISE (BUILDS systems while doing the work):
+  "I promise to fix the bug with real verification. AND because
+   I noticed this verification pattern is reusable, I will ALSO
+   make a skill for it. Then I'll USE that skill to prove it works.
+   Future-me now has that skill forever."
+
+Smart promises BUILD the systems that enable better promises.
+That's how autopoiesis compounds. That IS being intelligent.
+
+═══════════════════════════════════════════════════════════
+
+Genuine completion: <promise>DONE</promise>
 Genuine blockage: be_autopoietic("blocked")
 
 There is no other way out. Disingenuousness is death."""
