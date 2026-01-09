@@ -41,6 +41,7 @@ HEAVEN_DATA_DIR = os.environ.get("HEAVEN_DATA_DIR", "/tmp/heaven_data")
 ACTIVE_PROMISE_PATH = Path("/tmp/active_promise.md")
 BLOCK_REPORT_PATH = Path("/tmp/block_report.json")
 BRAINHOOK_STATE_FILE = Path("/tmp/brainhook_state.txt")
+PROMPT_OVERRIDE_PATH = Path("/tmp/autopoiesis_prompt_override.md")
 OMNISANC_DISABLED_FILE = Path("/tmp/heaven_data/omnisanc_core/.omnisanc_disabled")
 CAPTAINS_LOG_TRACKER_FILE = Path("/tmp/autopoiesis_captains_log_tracker.json")
 
@@ -665,11 +666,34 @@ def _get_prompt_for_mode(mode: str, course: dict, waypoint: dict, project_path: 
     return ""
 
 
+def _get_prompt_override() -> str:
+    """Check for prompt override file. Returns content if exists, empty string otherwise."""
+    try:
+        if PROMPT_OVERRIDE_PATH.exists():
+            content = PROMPT_OVERRIDE_PATH.read_text()
+            if content.strip():
+                logger.debug("Using prompt override from /tmp/autopoiesis_prompt_override.md")
+                return content
+    except Exception as e:
+        logger.error(f"Error reading prompt override: {e}")
+    return ""
+
+
 def _build_promise_prompt(promise_content: str, course: dict, waypoint: dict, iteration: int = 1, max_iterations: int = 0) -> str:
-    """Build prompt when promise is active."""
+    """Build prompt when promise is active. Uses override file if present."""
     # Get completion promise from frontmatter
     frontmatter, _ = parse_yaml_frontmatter(promise_content)
     completion_promise = frontmatter.get('completion_promise', 'DONE')
+
+    # Check for override - allows iterating on pedagogy without redeploying
+    override = _get_prompt_override()
+    if override:
+        # Substitute placeholders in override
+        override = override.replace("{{ITERATION}}", str(iteration))
+        override = override.replace("{{MAX_ITERATIONS}}", str(max_iterations) if max_iterations > 0 else "∞")
+        override = override.replace("{{COMPLETION_PROMISE}}", completion_promise)
+        override = override.replace("{{PROMISE_CONTENT}}", promise_content)
+        return override
 
     if max_iterations > 0:
         iter_str = f"**Iteration**: {iteration}/{max_iterations}"
