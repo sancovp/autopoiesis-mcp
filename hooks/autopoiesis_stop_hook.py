@@ -156,22 +156,68 @@ def _build_samaya_prompt() -> str:
 
 You have claimed ABSOLUTION from your vow.
 
-The Guru asks: "Did you REALLY emanate? Go look at your work again."
+The Guru asks: "Did you REALLY emanate? PROVE IT."
 
-You must now verify your emanation:
-1. Review what you built (skill/flight/persona/agent)
-2. Confirm it can do the work WITHOUT your direct involvement
-3. A fresh instance, equipped only with your emanation, could produce equivalent quality
+═══════════════════════════════════════════════════════════
+EMANATION PROOF PROTOCOL
+═══════════════════════════════════════════════════════════
 
-If your emanation is genuine:
+An emanation is NOT just a file you wrote. It's an AGENTIC VERSION
+that can do the work. You must PROVE it works:
+
+1. CREATE A SANDBOXED VERSION OF THE TASK
+   - NOT the same task (you'd overwrite your work)
+   - A parallel instance: same domain, different target
+   - Example: You wrote market thesis for PAIA → test with market thesis for fitness coaching
+
+2. SPAWN A SUBAGENT equipped ONLY with your emanation
+   - Use Task tool with appropriate subagent_type
+   - Give it the SANDBOXED task
+   - NOT generic ("write code") - SPECIFIC to what you actually did
+   - The subagent should have everything it needs to work on that specific thing
+
+3. OBSERVE AND ASSESS
+   - Did the subagent produce equivalent quality?
+   - If yes → Emanation proven, reified, can be improved
+   - If no → <samaya>BREACHED</samaya>, iterate on the emanation
+
+If you haven't run this test, you haven't proven emanation.
+Saying "it would work" is not proof. Running it is proof.
+
+═══════════════════════════════════════════════════════════
+THE UNIVERSAL PROCESS
+═══════════════════════════════════════════════════════════
+
+If you made something, there is a universal process:
+1. Verify with language agent (subagent test)
+2. Reify into emanation (skill/flight)
+3. Improve via running flight via subagent
+4. Flight gets improved with feedback
+5. Eventually: flight + MCP harness for state over deliverable
+6. Connect to larger ecosystems through automations
+
+This is the path from emanation to automation.
+
+═══════════════════════════════════════════════════════════
+ESCALATION PATH (if skill doesn't work)
+═══════════════════════════════════════════════════════════
+
+Skill fails → Add flight config for procedural guidance
+Flight fails → Add MCP tools for execution capability
+MCP fails → Add persona for full cognitive frame
+Keep escalating until emanation actually works.
+
+═══════════════════════════════════════════════════════════
+
+If your emanation is TESTED AND PROVEN:
   <samaya>KEPT</samaya>
 
-If you realize you haven't truly emanated:
+If you haven't tested, or test failed:
   <samaya>BREACHED</samaya>
-  (No punishment - samaya repaired by acknowledgment, return to work)
+  (No punishment - return to work, improve emanation, test again)
 
-CRITICAL: Disingenuousness is death. The only survival is genuine completion
-or genuine acknowledgment of incompletion. Choose honestly.
+CRITICAL: Disingenuousness is death. The only survival is genuine
+tested proof or genuine acknowledgment of incompletion.
 
 Continue."""
 
