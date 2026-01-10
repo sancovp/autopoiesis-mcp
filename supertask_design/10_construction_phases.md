@@ -2,7 +2,9 @@
 
 **Prerequisite**: Assumes GNOSYS context. Read 08_three_level_architecture.md and 09_evolution_arc.md first.
 
-## Phase 1: Modify Stop Hook
+## Phase 1: Modify Stop Hook + Self-Compact Commands
+
+### 1a. Stop Hook
 
 File: `/tmp/autopoiesis_mcp/hooks/autopoiesis_stop_hook.py`
 
@@ -15,6 +17,18 @@ Add detection for new tags:
 | `<samaya>BREACHED</samaya>` | Back to L2, samaya repaired, continue loop |
 
 The Tailfan Mountain prompt asks: "Did you REALLY emanate? Go look at your work again."
+
+### 1b. Self-Compact Commands in Self-Claude MCP
+
+Add to self-claude MCP (NOT bash scripts):
+
+```
+self_compact_rakshasa           - test emanation cold
+self_compact_custom_instructions - user provides instructions
+self_compact_new                - fresh start
+```
+
+These get added to the instructions that self-claude MCP vends when called. The MCP handles injecting the right compact instructions.
 
 ## Phase 2: Add Slash Command
 
