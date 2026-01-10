@@ -28,6 +28,18 @@ Your vow: Complete the task AND emanate - build something (skill/flight/persona/
 3. Request absolution only when emanation is ready
 4. The stop hook will enforce this - you cannot exit without emanation
 
+## Work Style (L1+L2 Layering)
+
+**USE AUTOPOIESIS WHILE WORKING.** The guru loop (L2) layers ON TOP of autopoiesis (L1):
+
+1. Call `be_autopoietic("promise")` to commit to each work chunk
+2. Do the work
+3. When chunk complete: `<promise>DONE</promise>`
+4. Repeat for next chunk
+5. When all work done AND emanation built: `<vow>ABSOLVED</vow>`
+
+Both systems fire simultaneously. L1 handles work chunks, L2 handles emanation.
+
 ## Exit
 
 When you have built an emanation and are ready:
