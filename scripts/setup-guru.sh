@@ -10,7 +10,8 @@ if [ -z "$TASK" ]; then
     exit 1
 fi
 
-# Create guru loop file
+# Create guru loop file with status: active in frontmatter
+# The stop hook checks this status - 'paused' allows exit without emanation
 cat > /tmp/guru_loop.md << EOF
 ---
 created: $(date -Iseconds)

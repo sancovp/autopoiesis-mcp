@@ -251,10 +251,20 @@ def _handle_samaya_loop(transcript_path: str, course: dict, waypoint: dict) -> N
 # =============================================================================
 
 def _check_guru_loop() -> tuple:
-    """Check if guru loop is active. Returns (active, content)."""
+    """Check if guru loop is active. Returns (active, content).
+
+    A guru loop is active if:
+    - The file exists AND
+    - status is NOT 'paused' in frontmatter
+    """
     try:
         if GURU_LOOP_PATH.exists():
             content = GURU_LOOP_PATH.read_text()
+            frontmatter, body = parse_yaml_frontmatter(content)
+            status = frontmatter.get('status', 'active')
+            if status == 'paused':
+                logger.debug("Guru loop exists but is PAUSED - not enforcing")
+                return False, ""
             logger.debug("Guru loop active")
             return True, content
     except Exception as e:
