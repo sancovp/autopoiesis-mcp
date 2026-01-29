@@ -620,7 +620,6 @@ def _build_diary_status_line(project_path: str) -> list:
     is_stale, turns_same = check_diary_staleness(project_path)
     if is_stale:
         return [
-            "",
             "⚠️ DIARY STALE",
             "The Starfleet Admiral requires checkin. Use update_debug_diary() ASAP and give SitRep!"
         ]
@@ -864,7 +863,6 @@ def _build_waypoint_lines(waypoint: dict) -> list:
     total_steps = waypoint.get("total_waypoints", 0)
     step_file = waypoint.get("last_served_file", "")
     return [
-        "",
         f"Flight: {config_name} (step {current_step}/{total_steps})",
         f"Step: {step_file}",
         "   -> Call get_current_step_content() for full instructions if needed",
@@ -898,22 +896,42 @@ def _build_navigation_lines() -> list:
 def format_session_prompt(course: dict, waypoint: dict, project_path: str, loop_prompt: str) -> str:
     """Format prompt for SESSION mode (active waypoint journey)."""
     lines = [
-        "═══════════════════════════════════════════════════════════",
-        "⚙️  FLIGHT STABILIZER",
-        "═══════════════════════════════════════════════════════════",
+        "<FLIGHT_STABILIZER>",
         "",
         "You are in an active flight. Focus on step-to-step progression.",
         "Complete current step fully before advancing.",
         "",
-        "📣 KNOWLEDGE CAPTURE: When you accomplish something, ask: 'Will I need to",
-        "   remember how to do this?' If YES → starship.knowledge_update():",
-        "   • SKILL: fits a skill category (understand/preflight/single_turn_process)",
-        "   • FLIGHT: complex step-by-step procedure",
-        "",
+        "<STATUS>",
+        "📍 Course info: starship.get_course_state()",
     ]
-    lines.append("📍 Course info: starship.get_course_state()")
     lines.extend(_build_waypoint_lines(waypoint))
-    lines.extend(_build_diary_status_line(project_path))
+    lines.append("</STATUS>")
+
+    lines.append("")
+    lines.append("<RECOMMENDED_ACTIONS>")
+    lines.append("If step complete -> call waypoint.navigate_to_next_waypoint()")
+    lines.append("If flight complete -> review ALL steps, only <promise>DONE</promise> when verified")
+    lines.append("If issues found -> call waypoint.reset_waypoint_journey() and run through again")
+    lines.append("</RECOMMENDED_ACTIONS>")
+
+    # Alerts section
+    alerts = _build_diary_status_line(project_path)
+    if alerts:
+        lines.append("")
+        lines.append("<ALERTS>")
+        lines.extend(alerts)
+        lines.append("</ALERTS>")
+
+    lines.append("")
+    lines.append("<REMINDERS>")
+    lines.append("📣 KNOWLEDGE CAPTURE: When you accomplish something, ask: 'Will I need to")
+    lines.append("   remember how to do this?' If YES → starship.knowledge_update():")
+    lines.append("   • SKILL: fits a skill category (understand/preflight/single_turn_process)")
+    lines.append("   • FLIGHT: complex step-by-step procedure")
+    lines.append("</REMINDERS>")
+
+    lines.append("")
+    lines.append("</FLIGHT_STABILIZER>")
 
     # Add user's loop prompt
     lines.append("")
@@ -923,7 +941,9 @@ def format_session_prompt(course: dict, waypoint: dict, project_path: str, loop_
     else:
         lines.append("Continue working on the current step.")
 
-    lines.extend(_build_navigation_lines())
+    lines.append("")
+    lines.append("Continue.")
+
     return "\n".join(lines)
 
 
