@@ -309,8 +309,58 @@ def _check_vow_absolved_in_transcript(transcript_path: str) -> bool:
     return False
 
 
-def _build_guru_prompt(guru_content: str) -> str:
+def _get_level_requirements(level: str) -> list:
+    """Get emanation requirements for a complexity level."""
+    requirements = {
+        "L1": [
+            "- [ ] Skill (understand or single_turn_process)"
+        ],
+        "L2": [
+            "- [ ] Skill (understand or preflight)",
+            "- [ ] Flight config for the procedure"
+        ],
+        "L3": [
+            "- [ ] Skill (preflight pointing to flight)",
+            "- [ ] Flight config",
+            "- [ ] MCP (TreeShell-wrapped tool surface)"
+        ],
+        "L4": [
+            "- [ ] Rules (.claude/rules/[domain].md)",
+            "- [ ] Skills (understand + preflight)",
+            "- [ ] Flight configs for common procedures",
+            "- [ ] Persona (frame + skillset + MCP set)",
+            "- [ ] Meta-flight: how to add components to this system"
+        ],
+        "L5": [
+            "- [ ] All L4 artifacts",
+            "- [ ] Scoring mechanism for outputs",
+            "- [ ] Goldenization: promote proven patterns to reusable programs"
+        ],
+        "L6": [
+            "- [ ] All L5 artifacts",
+            "- [ ] Deployed and accessible",
+            "- [ ] Documentation for users"
+        ]
+    }
+    return requirements.get(level, requirements["L2"])
+
+
+def _build_guru_prompt(guru_content: str, course: dict = None) -> str:
     """Build L2 guru loop prompt."""
+    # Parse frontmatter from guru_content
+    frontmatter, body = parse_yaml_frontmatter(guru_content)
+    target_level = frontmatter.get('target_level', 'L2')
+    course_linked = frontmatter.get('course_linked', False)
+    context_files = frontmatter.get('context_files', [])
+
+    # Get task from course if course_linked
+    task_description = ""
+    if course_linked and course:
+        task_description = course.get('description', '')
+        project = course.get('projects', [''])[0] if course.get('projects') else ''
+        if project:
+            task_description = f"[{project}] {task_description}"
+
     lines = [
         "═══════════════════════════════════════════════════════════",
         "🪷  GURU LOOP - BODHISATTVA VOW",
@@ -328,36 +378,67 @@ def _build_guru_prompt(guru_content: str) -> str:
         "2. Build an emanation that proves continuation",
         "3. Request absolution only when emanation is ready",
         "",
+    ]
+
+    # Add task section
+    if task_description:
+        lines.extend([
+            "═══════════════════════════════════════════════════════════",
+            "YOUR SUPERTASK",
+            "═══════════════════════════════════════════════════════════",
+            "",
+            task_description,
+            "",
+        ])
+
+    # Add emanation requirements section
+    lines.extend([
         "═══════════════════════════════════════════════════════════",
-        "L1+L2 LAYERING - USE AUTOPOIESIS WHILE WORKING",
+        f"EMANATION REQUIREMENTS (Target: {target_level})",
         "═══════════════════════════════════════════════════════════",
         "",
-        "The guru loop (L2) layers ON TOP of autopoiesis (L1):",
-        "1. Call be_autopoietic('promise') to commit to each work chunk",
-        "2. Do the work",
-        "3. When chunk complete: <promise>DONE</promise>",
-        "4. Repeat for next chunk",
-        "5. When all work done AND emanation built: <vow>ABSOLVED</vow>",
+        f"Your emanation must include ALL of the following for {target_level}:",
         "",
-        "Both systems fire simultaneously. L1 handles work chunks, L2 handles emanation.",
+    ])
+    lines.extend(_get_level_requirements(target_level))
+    lines.append("")
+
+    # Add context files if present
+    if context_files:
+        lines.extend([
+            "═══════════════════════════════════════════════════════════",
+            "CONTEXT FILES (read these)",
+            "═══════════════════════════════════════════════════════════",
+            "",
+        ])
+        for f in context_files:
+            lines.append(f"- {f}")
+        lines.append("")
+
+    # Add workflow section
+    lines.extend([
+        "═══════════════════════════════════════════════════════════",
+        "WORKFLOW: FLIGHTS + AUTOPOIESIS",
+        "═══════════════════════════════════════════════════════════",
+        "",
+        "1. Check fly() for relevant flights",
+        "2. Use flight (which uses autopoiesis internally)",
+        "3. Within flight steps, use be_autopoietic('promise')",
+        "4. When step complete: <promise>DONE</promise>",
+        "5. When ALL emanation requirements met: <vow>ABSOLVED</vow>",
+        "",
+        "Keep an implementation plan document in the project directory.",
+        "Use STARLOG debug_diary to track progress and decisions.",
         "",
         "═══════════════════════════════════════════════════════════",
         "",
         "To request absolution (triggers samaya gate):",
         "  <vow>ABSOLVED</vow>",
         "",
-        "You may NOT say this until you have built an emanation.",
+        "You may NOT say this until ALL emanation requirements are checked.",
         "Disingenuousness is death.",
         "",
-    ]
-
-    if guru_content.strip():
-        lines.extend([
-            "---",
-            "Your Task:",
-            guru_content,
-            "",
-        ])
+    ])
 
     lines.append("Continue.")
     return "\n".join(lines)
@@ -373,7 +454,7 @@ def _handle_guru_loop(transcript_path: str, guru_content: str, course: dict, way
         _output_block(prompt, "SAMAYA")
 
     # No absolution claimed - keep in guru loop
-    prompt = _build_guru_prompt(guru_content)
+    prompt = _build_guru_prompt(guru_content, course)
     _output_block(prompt, "GURU")
 
 
@@ -824,8 +905,13 @@ def format_session_prompt(course: dict, waypoint: dict, project_path: str, loop_
         "You are in an active flight. Focus on step-to-step progression.",
         "Complete current step fully before advancing.",
         "",
+        "📣 KNOWLEDGE CAPTURE: When you accomplish something, ask: 'Will I need to",
+        "   remember how to do this?' If YES → starship.knowledge_update():",
+        "   • SKILL: fits a skill category (understand/preflight/single_turn_process)",
+        "   • FLIGHT: complex step-by-step procedure",
+        "",
     ]
-    lines.extend(_build_course_lines(course))
+    lines.append("📍 Course info: starship.get_course_state()")
     lines.extend(_build_waypoint_lines(waypoint))
     lines.extend(_build_diary_status_line(project_path))
 

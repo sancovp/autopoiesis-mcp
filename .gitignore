@@ -23,3 +23,12 @@ write_excellent_document_subchain.json
 .vscode/
 *.swp
 *.swo
+
+# Internal docs (not for distribution)
+.claude/
+IMPLEMENTATION_PLAN.md
+PROMPT_build.md
+PROMPT_plan.md
+giint_integration*.md
+hierarchical_summarize/
+skills/understand-sdna/
